@@ -1,16 +1,12 @@
 package com.sadraskol.peg.scanner;
 
+import com.sadraskol.peg.TestUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -18,15 +14,13 @@ import java.util.stream.Stream;
 
 public class ScannerTest {
     @ParameterizedTest
-    @MethodSource("parserTestSet")
-    void eof(String filename, List<Token> expectedTokens) throws URISyntaxException, IOException {
-        URL resource = getUrl(filename);
-        var fileUri = resource.toURI();
-        var source = Files.readString(Path.of(fileUri));
+    @MethodSource("scannerTestSet")
+    void eof(String filename, List<Token> expectedTokens) {
+        var source = TestUtils.readFile(filename);
 
-        var parser = new Scanner(source);
+        var scanner = new Scanner(source);
 
-        Assertions.assertEquals(expectedTokens, parser.scan());
+        Assertions.assertEquals(expectedTokens, scanner.scan());
     }
 
     @Test
@@ -48,7 +42,7 @@ public class ScannerTest {
         Assertions.assertEquals(implementedTokens, testedTokens);
     }
 
-    private static Stream<Arguments> parserTestSet() {
+    private static Stream<Arguments> scannerTestSet() {
         return getArgumentsStream().map(ScannerPair::toPair);
     }
 
@@ -58,7 +52,7 @@ public class ScannerTest {
                 new ScannerPair("scanner/imports.peg", List.of(new Token.Import(), new Token.Identifier("org"), new Token.Dot(), new Token.Identifier("peg"), new Token.Dot(), new Token.Symbol("String"), new Token.Eof())),
                 new ScannerPair("scanner/records.peg", List.of(new Token.Record(), new Token.Symbol("Lesson"), new Token.LeftParen(), new Token.Identity(), new Token.Identifier("subject"), new Token.Colon(), new Token.Symbol("Subject"), new Token.RightParen(), new Token.LeftBrace(),
                         new Token.Injective(), new Token.Relation(), new Token.Identifier("slot"), new Token.Colon(), new Token.Symbol("Slot"),
-                        new Token.Injective(), new Token.Relation(), new Token.Identifier("room"), new Token.Colon(), new Token.Symbol("Room"),
+                        new Token.Relation(), new Token.Identifier("room"), new Token.Colon(), new Token.Symbol("Room"),
                         new Token.RightBrace(),
                         new Token.Eof())),
                 new ScannerPair("scanner/facts.peg", List.of(new Token.Facts(), new Token.LeftBrace(),
@@ -74,13 +68,5 @@ public class ScannerTest {
                         new Token.RightBrace(),
                         new Token.Eof()))
         );
-    }
-
-    private URL getUrl(String name) {
-        URL resource = getClass().getClassLoader().getResource(name);
-        if (resource == null) {
-            throw new IllegalStateException("Cannot find file " + name + " in current class loader");
-        }
-        return resource;
     }
 }
