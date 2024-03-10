@@ -1,0 +1,4 @@
+record Lesson(identity subject: Subject) {
+    injective relation slot: Slot
+    injective relation room: Room
+}

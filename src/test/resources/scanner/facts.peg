@@ -1,0 +1,5 @@
+facts {
+    Slot = {
+        ("Monday", LocalTime.of(8, 30)),
+    }
+}

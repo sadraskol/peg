@@ -1,0 +1,6 @@
+
+constraint {
+    forall (l1, l2) in Lesson:
+        (l1 != l2 and l1.slot == l2.slot)
+        implies l1.room != l2.room
+}
