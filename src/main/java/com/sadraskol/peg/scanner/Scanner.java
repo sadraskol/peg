@@ -1,7 +1,5 @@
 package com.sadraskol.peg.scanner;
 
-import com.sadraskol.peg.scanner.tokens.Token;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,83 +14,62 @@ public class Scanner {
         this.tokens = new ArrayList<>();
     }
 
-    public List<Token> parse() {
+    public List<Token> scan() {
         while (!endOfSource()) {
             skipWhiteSpaces();
             if (endOfSource()) {
                 break;
             }
             if (startsWith("import")) {
-                tokens.add(new Token.Import());
-                current += 6;
+                addToken(new Token.Import());
             } else if (startsWith("facts")) {
-                tokens.add(new Token.Facts());
-                current += 5;
+                addToken(new Token.Facts());
             } else if (startsWith("record")) {
-                tokens.add(new Token.Record());
-                current += 6;
+                addToken(new Token.Record());
             } else if (startsWith("constraint")) {
-                tokens.add(new Token.Constraint());
-                current += 10;
+                addToken(new Token.Constraint());
             } else if (startsWith("forall")) {
-                tokens.add(new Token.Forall());
-                current += 6;
+                addToken(new Token.Forall());
             } else if (startsWith("injective")) {
-                tokens.add(new Token.Injective());
-                current += 9;
+                addToken(new Token.Injective());
             } else if (startsWith("in")) {
-                tokens.add(new Token.In());
-                current += 2;
+                addToken(new Token.In());
             } else if (startsWith("implies")) {
-                tokens.add(new Token.Implies());
-                current += 7;
+                addToken(new Token.Implies());
             } else if (startsWith("and")) {
-                tokens.add(new Token.And());
-                current += 3;
+                addToken(new Token.And());
             } else if (startsWith("identity")) {
-                tokens.add(new Token.Identity());
-                current += 8;
+                addToken(new Token.Identity());
             } else if (startsWith("relation")) {
-                tokens.add(new Token.Relation());
-                current += 8;
+                addToken(new Token.Relation());
             } else if (startsWith("==")) {
-                tokens.add(new Token.EqualEqual());
-                current += 2;
+                addToken(new Token.EqualEqual());
             } else if (startsWith("!=")) {
-                tokens.add(new Token.BangEqual());
-                current += 2;
+                addToken(new Token.BangEqual());
             } else if (startsWith("(")) {
-                tokens.add(new Token.LeftParen());
-                current += 1;
+                addToken(new Token.LeftParen());
             } else if (startsWith(")")) {
-                tokens.add(new Token.RightParen());
-                current += 1;
+                addToken(new Token.RightParen());
             } else if (startsWith("{")) {
-                tokens.add(new Token.LeftBrace());
-                current += 1;
+                addToken(new Token.LeftBrace());
             } else if (startsWith("}")) {
-                tokens.add(new Token.RightBrace());
-                current += 1;
+                addToken(new Token.RightBrace());
             } else if (startsWith("=")) {
-                tokens.add(new Token.Equal());
-                current += 1;
+                addToken(new Token.Equal());
             } else if (startsWith(",")) {
-                tokens.add(new Token.Comma());
-                current += 1;
+                addToken(new Token.Comma());
             } else if (startsWith(".")) {
-                tokens.add(new Token.Dot());
-                current += 1;
+                addToken(new Token.Dot());
             } else if (startsWith(":")) {
-                tokens.add(new Token.Colon());
-                current += 1;
+                addToken(new Token.Colon());
             } else if (startsWith("\"")) {
-                parseString();
+                scanString();
             } else if (Character.isUpperCase(source.charAt(current))) {
-                parseSymbol();
+                scanSymbol();
             } else if (Character.isLowerCase(source.charAt(current))) {
-                parseIdentifier();
+                scanIdentifier();
             } else if (Character.isDigit(source.charAt(current))) {
-                parseNumber();
+                scanNumber();
             } else {
                 throw new RuntimeException("Unknown char (" + source.charAt(current) + ") at " + current);
             }
@@ -113,7 +90,12 @@ public class Scanner {
         return source.substring(current).startsWith(substr);
     }
 
-    private void parseNumber() {
+    void addToken(Token token) {
+        tokens.add(token);
+        current += token.size();
+    }
+
+    private void scanNumber() {
         var content = new StringBuilder();
         while (Character.isDigit(source.charAt(current))) {
             content.append(source.charAt(current));
@@ -122,7 +104,7 @@ public class Scanner {
         tokens.add(new Token.Number(Integer.parseInt(content.toString())));
     }
 
-    private void parseSymbol() {
+    private void scanSymbol() {
         var content = new StringBuilder();
         while (Character.isLetterOrDigit(source.charAt(current))) {
             content.append(source.charAt(current));
@@ -131,7 +113,7 @@ public class Scanner {
         tokens.add(new Token.Symbol(content.toString()));
     }
 
-    private void parseIdentifier() {
+    private void scanIdentifier() {
         var content = new StringBuilder();
         while (Character.isLetterOrDigit(source.charAt(current))) {
             content.append(source.charAt(current));
@@ -140,7 +122,7 @@ public class Scanner {
         tokens.add(new Token.Identifier(content.toString()));
     }
 
-    private void parseString() {
+    private void scanString() {
         current += 1; // remove init "
         var content = new StringBuilder();
         while (source.charAt(current) != '"') {

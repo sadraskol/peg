@@ -1,6 +1,5 @@
 package com.sadraskol.peg.scanner;
 
-import com.sadraskol.peg.scanner.tokens.Token;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,7 +26,7 @@ public class ScannerTest {
 
         var parser = new Scanner(source);
 
-        Assertions.assertEquals(expectedTokens, parser.parse());
+        Assertions.assertEquals(expectedTokens, parser.scan());
     }
 
     @Test
