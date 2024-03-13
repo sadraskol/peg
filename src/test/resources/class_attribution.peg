@@ -53,7 +53,7 @@ facts {
 }
 
 constraint {
-    forall (l1, l2) in Lesson:
-        l1 != l2 and l1.slot == l2.slot implies
+    forall l1, l2 in Lesson:
+        (l1 != l2 and l1.slot == l2.slot) implies
             (l1.room != l2.room and l1.teacher != l2.teacher and l1.studentGroup != l2.studentGroup)
 }

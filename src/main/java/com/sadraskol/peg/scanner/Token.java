@@ -4,9 +4,9 @@ public sealed interface Token {
 
     int size();
 
-    record String(java.lang.String content) implements Token {
+    record String(java.lang.String str) implements Token {
         public int size() {
-            return content.length() + 2;
+            return str.length() + 2;
         }
     }
 
@@ -136,15 +136,15 @@ public sealed interface Token {
         }
     }
 
-    record Identifier(java.lang.String content) implements Token {
+    record Identifier(java.lang.String name) implements Token {
         public int size() {
-            return content.length();
+            return name.length();
         }
     }
 
-    record Symbol(java.lang.String content) implements Token {
+    record Symbol(java.lang.String name) implements Token {
         public int size() {
-            return content.length();
+            return name.length();
         }
     }
 
