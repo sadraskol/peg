@@ -15,33 +15,31 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class ParserTest {
   @ParameterizedTest
   @MethodSource("parserTestCases")
-  void parserTestCase(String filename, List<Statement> expectedStatements) {
+  void parserTestCase(String filename, List<Declaration> expectedDeclarations) {
     var source = TestUtils.readFile(filename);
     var scanner = new Scanner(source);
     var parser = new Parser(scanner.scan());
 
-    Assertions.assertEquals(expectedStatements, parser.parse());
+    Assertions.assertEquals(expectedDeclarations, parser.parse());
   }
 
   @Test
-  void allTokensAreIncludedInTheTests() {
-    var testedTokens =
+  void allStatementsAreIncludedInTheTests() {
+    var testStatements =
         getArgumentsStream()
-            .map(ParserTestCase::expectedStatements)
+            .map(ParserTestCase::expectedDeclarations)
             .flatMap(Collection::stream)
-            .map(Statement::getClass)
-            .map(Class::toString)
+            .map(Declaration::getClass)
             .sorted()
             .distinct()
             .toList();
 
-    List<String> implementedTokens =
-        Arrays.stream(Statement.class.getPermittedSubclasses())
-            .map(Class::toString)
+    var implementedTokens =
+        Arrays.stream(Declaration.class.getPermittedSubclasses())
             .sorted()
             .toList();
 
-    Assertions.assertEquals(implementedTokens, testedTokens);
+    Assertions.assertEquals(implementedTokens, testStatements);
   }
 
   private static Stream<Arguments> parserTestCases() {
@@ -52,11 +50,11 @@ public class ParserTest {
     return Stream.of(
         new ParserTestCase("scanner/eof.peg", List.of()),
         new ParserTestCase(
-            "scanner/imports.peg", List.of(new Statement.Import(List.of("org", "peg", "String")))),
+            "scanner/imports.peg", List.of(new Declaration.Import(List.of("org", "peg", "String")))),
         new ParserTestCase(
             "scanner/records.peg",
             List.of(
-                new Statement.Record(
+                new Declaration.Record(
                     "Lesson",
                     List.of(new RecordMember(true, "subject", "Subject")),
                     List.of(
@@ -65,32 +63,32 @@ public class ParserTest {
         new ParserTestCase(
             "scanner/constraint.peg",
             List.of(
-                new Statement.Constraint(
-                    new ConstraintExpr.Forall(
-                        new ConstraintExpr.Tuple(
+                new Declaration.Constraint(
+                    new Expression.Forall(
+                        new Expression.Tuple(
                             List.of(
-                                new ConstraintExpr.Variable("l1"),
-                                new ConstraintExpr.Variable("l2"))),
-                        new ConstraintExpr.Symbol("Lesson"),
-                        new ConstraintExpr.Implies(
-                            new ConstraintExpr.Grouping(
-                                new ConstraintExpr.And(
-                                    new ConstraintExpr.NotEqual(
-                                        new ConstraintExpr.Variable("l1"),
-                                        new ConstraintExpr.Variable("l2")),
-                                    new ConstraintExpr.Equal(
-                                        new ConstraintExpr.Member(
-                                            new ConstraintExpr.Variable("l1"),
-                                            new ConstraintExpr.Variable("slot")),
-                                        new ConstraintExpr.Member(
-                                            new ConstraintExpr.Variable("l2"),
-                                            new ConstraintExpr.Variable("slot"))))),
-                            new ConstraintExpr.NotEqual(
-                                new ConstraintExpr.Member(
-                                    new ConstraintExpr.Variable("l1"),
-                                    new ConstraintExpr.Variable("room")),
-                                new ConstraintExpr.Member(
-                                    new ConstraintExpr.Variable("l2"),
-                                    new ConstraintExpr.Variable("room")))))))));
+                                new Expression.Variable("l1"),
+                                new Expression.Variable("l2"))),
+                        new Expression.Symbol("Lesson"),
+                        new Expression.Implies(
+                            new Expression.Grouping(
+                                new Expression.And(
+                                    new Expression.NotEqual(
+                                        new Expression.Variable("l1"),
+                                        new Expression.Variable("l2")),
+                                    new Expression.Equal(
+                                        new Expression.Member(
+                                            new Expression.Variable("l1"),
+                                            new Expression.Variable("slot")),
+                                        new Expression.Member(
+                                            new Expression.Variable("l2"),
+                                            new Expression.Variable("slot"))))),
+                            new Expression.NotEqual(
+                                new Expression.Member(
+                                    new Expression.Variable("l1"),
+                                    new Expression.Variable("room")),
+                                new Expression.Member(
+                                    new Expression.Variable("l2"),
+                                    new Expression.Variable("room")))))))));
   }
 }
