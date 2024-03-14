@@ -1,6 +1,7 @@
 package com.sadraskol.peg.parser;
 
 import com.sadraskol.peg.scanner.Token;
+import com.sadraskol.peg.scanner.TokenType;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -16,12 +17,12 @@ public class Parser {
   }
 
   List<Statement> parse() {
-    while (!(tokens.getFirst() instanceof Token.Eof())) {
-      if (tokens.getFirst() instanceof Token.Import) {
+    while (!(tokens.getFirst().type() == TokenType.Eof)) {
+      if (tokens.getFirst().type() == TokenType.Import) {
         parseImportStatement();
-      } else if (tokens.getFirst() instanceof Token.Record) {
+      } else if (tokens.getFirst().type() == TokenType.Record) {
         parseRecordStatement();
-      } else if (tokens.getFirst() instanceof Token.Constraint) {
+      } else if (tokens.getFirst().type() == TokenType.Constraint) {
         parseConstraintStatement();
       } else {
         throw new IllegalStateException(
@@ -32,76 +33,76 @@ public class Parser {
   }
 
   private void parseImportStatement() {
-    pop(Token.Import.class);
+    pop(TokenType.Import);
     var domain = new ArrayList<String>();
     loop:
     while (true) {
       var identifier = tokens.pop();
-      switch (identifier) {
-        case Token.Identifier sdl -> domain.add(sdl.name());
-        case Token.Symbol tld -> {
-          domain.add(tld.name());
+      switch (identifier.type()) {
+        case TokenType.Identifier -> domain.add(identifier.content());
+        case TokenType.Symbol -> {
+          domain.add(identifier.content());
           break loop;
         }
         default ->
             throw new IllegalStateException("Unexpected token type for an import: " + identifier);
       }
-      pop(Token.Dot.class);
+      pop(TokenType.Dot);
     }
     statements.add(new Statement.Import(domain));
   }
 
   private void parseRecordStatement() {
-    pop(Token.Record.class);
+    pop(TokenType.Record);
     var name = getSymbolName(tokens.pop());
 
-    pop(Token.LeftParen.class);
+    pop(TokenType.LeftParen);
     var members = new ArrayList<RecordMember>();
-    while (!(tokens.peek() instanceof Token.RightParen)) {
+    while (!(tokens.peek().type() == TokenType.RightParen)) {
       var isIdentity = false;
-      if (tokens.peek() instanceof Token.Identity) {
+      if (tokens.peek().type() == TokenType.Identity) {
         isIdentity = true;
-        pop(Token.Identity.class);
+        pop(TokenType.Identity);
       }
       var memberName = getIdentifierName(tokens.pop());
-      pop(Token.Colon.class);
+      pop(TokenType.Colon);
       var memberType = getSymbolName(tokens.pop());
-      if (tokens.peek() instanceof Token.Comma) {
-        pop(Token.Comma.class);
+      if (tokens.peek().type() == TokenType.Comma) {
+        pop(TokenType.Comma);
       }
       members.add(new RecordMember(isIdentity, memberName, memberType));
     }
-    pop(Token.RightParen.class);
-    pop(Token.LeftBrace.class);
+    pop(TokenType.RightParen);
+    pop(TokenType.LeftBrace);
 
     var relations = new ArrayList<RecordRelation>();
-    while (!(tokens.peek() instanceof Token.RightBrace)) {
+    while (!(tokens.peek().type() == TokenType.RightBrace)) {
       var isInjective = false;
-      if (tokens.peek() instanceof Token.Injective) {
+      if (tokens.peek().type() == TokenType.Injective) {
         isInjective = true;
-        pop(Token.Injective.class);
+        pop(TokenType.Injective);
       }
 
-      pop(Token.Relation.class);
+      pop(TokenType.Relation);
 
       var memberName = getIdentifierName(tokens.pop());
-      pop(Token.Colon.class);
+      pop(TokenType.Colon);
 
       var memberType = getSymbolName(tokens.pop());
       relations.add(new RecordRelation(isInjective, memberName, memberType));
     }
-    pop(Token.RightBrace.class);
+    pop(TokenType.RightBrace);
 
     statements.add(new Statement.Record(name, members, relations));
   }
 
   private void parseConstraintStatement() {
-    pop(Token.Constraint.class);
-    pop(Token.LeftBrace.class);
+    pop(TokenType.Constraint);
+    pop(TokenType.LeftBrace);
 
     var expr = constraintExpr();
 
-    pop(Token.RightBrace.class);
+    pop(TokenType.RightBrace);
 
     statements.add(new Statement.Constraint(expr));
   }
@@ -113,8 +114,8 @@ public class Parser {
   private ConstraintExpr impliesExpr() {
     var left = orExpr();
 
-    if (tokens.peek() instanceof Token.Implies) {
-      pop(Token.Implies.class);
+    if (tokens.peek().type() == TokenType.Implies) {
+      pop(TokenType.Implies);
 
       var right = impliesExpr();
 
@@ -127,8 +128,8 @@ public class Parser {
   private ConstraintExpr orExpr() {
     var left = andExpr();
 
-    // if (tokens.peek() instanceof Token.Or) {
-    //         pop(Token.Or.class);
+    // if (tokens.peek().type() == TokenType.Or) {
+    //         pop(TokenType.Or);
 
     //         var right = orExpr();
 
@@ -141,8 +142,8 @@ public class Parser {
   private ConstraintExpr andExpr() {
     var left = equalityExpr();
 
-    if (tokens.peek() instanceof Token.And) {
-      pop(Token.And.class);
+    if (tokens.peek().type() == TokenType.And) {
+      pop(TokenType.And);
 
       var right = andExpr();
 
@@ -155,14 +156,14 @@ public class Parser {
   private ConstraintExpr equalityExpr() {
     var left = unaryExpr();
 
-    if (tokens.peek() instanceof Token.EqualEqual) {
-      pop(Token.EqualEqual.class);
+    if (tokens.peek().type() == TokenType.EqualEqual) {
+      pop(TokenType.EqualEqual);
 
       var right = equalityExpr();
 
       return new ConstraintExpr.Equal(left, right);
-    } else if (tokens.peek() instanceof Token.BangEqual) {
-      pop(Token.BangEqual.class);
+    } else if (tokens.peek().type() == TokenType.BangEqual) {
+      pop(TokenType.BangEqual);
 
       var right = equalityExpr();
 
@@ -179,8 +180,8 @@ public class Parser {
   private ConstraintExpr memberExpr() {
     var callee = primaryExpr();
 
-    if (tokens.peek() instanceof Token.Dot) {
-      pop(Token.Dot.class);
+    if (tokens.peek().type() == TokenType.Dot) {
+      pop(TokenType.Dot);
 
       var member = memberExpr();
 
@@ -198,65 +199,65 @@ public class Parser {
   }
 
   private ConstraintExpr primaryExpr() {
-    if (tokens.peek() instanceof Token.Number) {
-    } else if (tokens.peek() instanceof Token.String) {
-    } else if (tokens.peek() instanceof Token.LeftParen) {
-      pop(Token.LeftParen.class);
+    if (tokens.peek().type() == TokenType.Number) {
+    } else if (tokens.peek().type() == TokenType.String) {
+    } else if (tokens.peek().type() == TokenType.LeftParen) {
+      pop(TokenType.LeftParen);
 
       var expr = constraintExpr();
 
-      pop(Token.RightParen.class);
+      pop(TokenType.RightParen);
 
       return new ConstraintExpr.Grouping(expr);
-    } else if (tokens.peek() instanceof Token.LeftBrace) {
-    } else if (tokens.peek() instanceof Token.Identifier) {
+    } else if (tokens.peek().type() == TokenType.LeftBrace) {
+    } else if (tokens.peek().type() == TokenType.Identifier) {
       var identifier = getIdentifierName(tokens.pop());
       return new ConstraintExpr.Variable(identifier);
-    } else if (tokens.peek() instanceof Token.Symbol) {
+    } else if (tokens.peek().type() == TokenType.Symbol) {
       var symbol = getSymbolName(tokens.pop());
       return new ConstraintExpr.Symbol(symbol);
-    } else if (tokens.peek() instanceof Token.Forall) {
+    } else if (tokens.peek().type() == TokenType.Forall) {
       return forallExpr();
     }
     throw new IllegalStateException("Expected expression, got: " + tokens.peek());
   }
 
   private ConstraintExpr forallExpr() {
-    pop(Token.Forall.class);
+    pop(TokenType.Forall);
     var members = new ArrayList<ConstraintExpr>();
-    while (!(tokens.peek() instanceof Token.In)) {
+    while (!(tokens.peek().type() == TokenType.In)) {
       var member = constraintExpr();
-      if (tokens.peek() instanceof Token.Comma) {
-        pop(Token.Comma.class);
+      if (tokens.peek().type() == TokenType.Comma) {
+        pop(TokenType.Comma);
       }
       members.add(member);
     }
-    pop(Token.In.class);
+    pop(TokenType.In);
     var set = constraintExpr();
-    pop(Token.Colon.class);
+    pop(TokenType.Colon);
     var predicate = constraintExpr();
     return new ConstraintExpr.Forall(
         new ConstraintExpr.Tuple(members), (ConstraintExpr.Symbol) set, predicate);
   }
 
-  private <T extends Token> void pop(Class<T> type) {
+  private void pop(TokenType type) {
     var tok = tokens.pop();
-    if (!type.isInstance(tok)) {
+    if (tok.type() != type) {
       throw new IllegalStateException("Expected to pop " + type + " but got: " + tok);
     }
   }
 
   private static String getIdentifierName(Token identifier) {
-    if (identifier instanceof Token.Identifier) {
-      return ((Token.Identifier) identifier).name();
+    if (identifier.type() == TokenType.Identifier) {
+      return identifier.content();
     } else {
       throw new IllegalStateException("Expected an identifier, got: " + identifier);
     }
   }
 
   private static String getSymbolName(Token symbol) {
-    if (symbol instanceof Token.Symbol) {
-      return ((Token.Symbol) symbol).name();
+    if (symbol.type() == TokenType.Symbol) {
+      return symbol.content();
     } else {
       throw new IllegalStateException("Expected a type, got: " + symbol);
     }
