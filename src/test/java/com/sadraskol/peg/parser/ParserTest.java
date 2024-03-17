@@ -4,6 +4,7 @@ import com.sadraskol.peg.TestUtils;
 import com.sadraskol.peg.scanner.Scanner;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
@@ -30,13 +31,13 @@ public class ParserTest {
             .map(ParserTestCase::expectedDeclarations)
             .flatMap(Collection::stream)
             .map(Declaration::getClass)
-            .sorted()
+            .sorted(Comparator.comparing(Class::toString))
             .distinct()
             .toList();
 
     var implementedTokens =
         Arrays.stream(Declaration.class.getPermittedSubclasses())
-            .sorted()
+            .sorted(Comparator.comparing(Class::toString))
             .toList();
 
     Assertions.assertEquals(implementedTokens, testStatements);
@@ -50,7 +51,8 @@ public class ParserTest {
     return Stream.of(
         new ParserTestCase("scanner/eof.peg", List.of()),
         new ParserTestCase(
-            "scanner/imports.peg", List.of(new Declaration.Import(List.of("org", "peg", "String")))),
+            "scanner/imports.peg",
+            List.of(new Declaration.Import(List.of("org", "peg", "String")))),
         new ParserTestCase(
             "scanner/records.peg",
             List.of(
@@ -61,14 +63,30 @@ public class ParserTest {
                         new RecordRelation(true, "slot", "Slot"),
                         new RecordRelation(false, "room", "Room"))))),
         new ParserTestCase(
+            "scanner/facts.peg",
+            List.of(
+                new Declaration.Facts(
+                    List.of(
+                        new Expression.Assignment(
+                            new Expression.Symbol("Slot"),
+                            new Expression.Array(
+                                List.of(
+                                    new Expression.Tuple(
+                                        List.of(
+                                            new Expression.String("Monday"),
+                                            new Expression.Call(
+                                                new Expression.Symbol("LocalTime"),
+                                                new Expression.Variable("of"),
+                                                List.of(
+                                                    new Expression.Number(8),
+                                                    new Expression.Number(30)))))))))))),
+        new ParserTestCase(
             "scanner/constraint.peg",
             List.of(
                 new Declaration.Constraint(
                     new Expression.Forall(
                         new Expression.Tuple(
-                            List.of(
-                                new Expression.Variable("l1"),
-                                new Expression.Variable("l2"))),
+                            List.of(new Expression.Variable("l1"), new Expression.Variable("l2"))),
                         new Expression.Symbol("Lesson"),
                         new Expression.Implies(
                             new Expression.Grouping(
@@ -85,8 +103,7 @@ public class ParserTest {
                                             new Expression.Variable("slot"))))),
                             new Expression.NotEqual(
                                 new Expression.Member(
-                                    new Expression.Variable("l1"),
-                                    new Expression.Variable("room")),
+                                    new Expression.Variable("l1"), new Expression.Variable("room")),
                                 new Expression.Member(
                                     new Expression.Variable("l2"),
                                     new Expression.Variable("room")))))))));

@@ -9,4 +9,6 @@ public sealed interface Declaration {
       implements Declaration {}
 
   record Constraint(Expression expr) implements Declaration {}
+
+  record Facts(List<Expression> expressions) implements Declaration {}
 }

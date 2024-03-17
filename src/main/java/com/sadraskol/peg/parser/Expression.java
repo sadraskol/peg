@@ -9,9 +9,9 @@ public sealed interface Expression {
 
   record Grouping(Expression expr) implements Expression {}
 
-  record Variable(String name) implements Expression {}
+  record Variable(java.lang.String name) implements Expression {}
 
-  record Symbol(String name) implements Expression {}
+  record Symbol(java.lang.String name) implements Expression {}
 
   record Member(Variable callee, Expression relation) implements Expression {}
 
@@ -22,4 +22,15 @@ public sealed interface Expression {
   record NotEqual(Expression left, Expression right) implements Expression {}
 
   record And(Expression left, Expression right) implements Expression {}
+
+  record Number(int i) implements Expression {}
+
+  record String(java.lang.String str) implements Expression {}
+
+  record Call(Expression callee, Expression method, List<Expression> arguments)
+      implements Expression {}
+
+  record Array(List<Expression> tuples) implements Expression {}
+
+  record Assignment(Expression target, Expression expr) implements Expression {}
 }

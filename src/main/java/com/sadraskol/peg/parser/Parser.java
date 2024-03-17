@@ -24,6 +24,8 @@ public class Parser {
         parseRecordStatement();
       } else if (tokens.getFirst().type() == TokenType.Constraint) {
         parseConstraintStatement();
+      } else if (tokens.getFirst().type() == TokenType.Facts) {
+        parseFactsStatement();
       } else {
         throw new IllegalStateException(
             "Unexpected token " + tokens.getFirst() + ", expected a statement");
@@ -107,8 +109,37 @@ public class Parser {
     declarations.add(new Declaration.Constraint(expr));
   }
 
+  private void parseFactsStatement() {
+    pop(TokenType.Facts);
+    pop(TokenType.LeftBrace);
+
+    var expressions = new ArrayList<Expression>();
+
+    while (tokens.getFirst().type() != TokenType.RightBrace) {
+      expressions.add(constraintExpr());
+    }
+
+    pop(TokenType.RightBrace);
+
+    declarations.add(new Declaration.Facts(expressions));
+  }
+
   private Expression constraintExpr() {
-    return impliesExpr();
+    return assignmentExpr();
+  }
+
+  private Expression assignmentExpr() {
+    var left = impliesExpr();
+
+    if (tokens.peek().type() == TokenType.Equal) {
+      pop(TokenType.Equal);
+
+      var right = assignmentExpr();
+
+      return new Expression.Assignment(left, right);
+    } else {
+      return left;
+    }
   }
 
   private Expression impliesExpr() {
@@ -185,11 +216,29 @@ public class Parser {
 
       var member = memberExpr();
 
-      if (!(callee instanceof Expression.Variable)) {
+      if (!(callee instanceof Expression.Variable || callee instanceof Expression.Symbol)) {
         throw new IllegalStateException("Expected member expression on variable, got: " + callee);
       }
       if (!(member instanceof Expression.Member || member instanceof Expression.Variable)) {
         throw new IllegalStateException("Expected member expression or variable, got: " + member);
+      }
+
+      if (tokens.peek().type() == TokenType.LeftParen) {
+        pop(TokenType.LeftParen);
+        var args = new ArrayList<Expression>();
+        do {
+          if (tokens.peek().type() == TokenType.Comma) {
+            pop(TokenType.Comma);
+          }
+          if (tokens.peek().type() == TokenType.RightParen) {
+            break;
+          }
+
+          args.add(constraintExpr());
+
+        } while (tokens.peek().type() == TokenType.Comma);
+        pop(TokenType.RightParen);
+        return new Expression.Call(callee, member, args);
       }
 
       return new Expression.Member((Expression.Variable) callee, member);
@@ -200,16 +249,51 @@ public class Parser {
 
   private Expression primaryExpr() {
     if (tokens.peek().type() == TokenType.Number) {
+      var str = tokens.pop().content();
+      return new Expression.Number(Integer.parseInt(str));
     } else if (tokens.peek().type() == TokenType.String) {
+      var str = tokens.pop().content();
+      return new Expression.String(str.substring(1, str.length() - 1));
     } else if (tokens.peek().type() == TokenType.LeftParen) {
       pop(TokenType.LeftParen);
 
-      var expr = constraintExpr();
+      var exprs = new ArrayList<Expression>();
+      do {
+        if (tokens.peek().type() == TokenType.Comma) {
+          pop(TokenType.Comma);
+        }
+        if (tokens.peek().type() == TokenType.RightParen) {
+          break;
+        }
 
+        exprs.add(constraintExpr());
+
+      } while (tokens.peek().type() == TokenType.Comma);
       pop(TokenType.RightParen);
 
-      return new Expression.Grouping(expr);
+      if (exprs.size() == 1) {
+        return new Expression.Grouping(exprs.getFirst());
+      } else {
+        return new Expression.Tuple(exprs);
+      }
     } else if (tokens.peek().type() == TokenType.LeftBrace) {
+      pop(TokenType.LeftBrace);
+
+      var exprs = new ArrayList<Expression>();
+      do {
+        if (tokens.peek().type() == TokenType.Comma) {
+          pop(TokenType.Comma);
+        }
+        if (tokens.peek().type() == TokenType.RightBrace) {
+          break;
+        }
+
+        exprs.add(constraintExpr());
+
+      } while (tokens.peek().type() == TokenType.Comma);
+      pop(TokenType.RightBrace);
+
+      return new Expression.Array(exprs);
     } else if (tokens.peek().type() == TokenType.Identifier) {
       var identifier = getIdentifierName(tokens.pop());
       return new Expression.Variable(identifier);
@@ -236,8 +320,7 @@ public class Parser {
     var set = constraintExpr();
     pop(TokenType.Colon);
     var predicate = constraintExpr();
-    return new Expression.Forall(
-        new Expression.Tuple(members), (Expression.Symbol) set, predicate);
+    return new Expression.Forall(new Expression.Tuple(members), (Expression.Symbol) set, predicate);
   }
 
   private void pop(TokenType type) {
