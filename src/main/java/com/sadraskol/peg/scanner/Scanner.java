@@ -74,6 +74,8 @@ public class Scanner {
         addToken(TokenType.Colon);
       } else if (matches("\"")) {
         scanString();
+      } else if (matches("//")) {
+        scanComment();
       } else if (Character.isUpperCase(source.charAt(current))) {
         scanSymbol();
       } else if (Character.isLowerCase(source.charAt(current))) {
@@ -88,6 +90,13 @@ public class Scanner {
     addToken(TokenType.Eof);
 
     return tokens;
+  }
+
+  private void scanComment() {
+    while (!endOfSource() && source.charAt(current) != '\r') {
+      current += 1;
+    }
+    this.matchedStr = "";
   }
 
   private void skipWhiteSpaces() {

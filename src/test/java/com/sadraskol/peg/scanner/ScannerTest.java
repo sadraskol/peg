@@ -45,6 +45,7 @@ public class ScannerTest {
   private static Stream<ScannerTestCase> getArgumentsStream() {
     return Stream.of(
         new ScannerTestCase("scanner/eof.peg", List.of(new Token(0, 1, "", TokenType.Eof))),
+        new ScannerTestCase("scanner/comment.peg", List.of(new Token(0, 1, "", TokenType.Eof))),
         new ScannerTestCase(
             "scanner/imports.peg",
             List.of(
