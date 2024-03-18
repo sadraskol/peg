@@ -34,6 +34,8 @@ public class Scanner {
         addToken(TokenType.Facts);
       } else if (matches("record")) {
         addToken(TokenType.Record);
+      } else if (matches("exists")) {
+        addToken(TokenType.Exists);
       } else if (matches("constraint")) {
         addToken(TokenType.Constraint);
       } else if (matches("forall")) {

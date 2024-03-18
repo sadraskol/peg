@@ -26,5 +26,6 @@ public enum TokenType {
   Identifier,
   Symbol,
   Number,
+  Exists,
   Eof
 }

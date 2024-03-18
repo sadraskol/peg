@@ -136,6 +136,23 @@ public class ScannerTest {
                 new Token(0, 1, ".", TokenType.Dot),
                 new Token(0, 1, "room", TokenType.Identifier),
                 new Token(0, 1, "}", TokenType.RightBrace),
+                new Token(0, 1, "", TokenType.Eof))),
+        new ScannerTestCase(
+            "scanner/exists.peg",
+            List.of(
+                new Token(0, 1, "constraint", TokenType.Constraint),
+                new Token(0, 1, "{", TokenType.LeftBrace),
+                new Token(0, 1, "exists", TokenType.Exists),
+                new Token(0, 1, "l", TokenType.Identifier),
+                new Token(0, 1, "in", TokenType.In),
+                new Token(0, 1, "Lesson", TokenType.Symbol),
+                new Token(0, 1, ":", TokenType.Colon),
+                new Token(0, 1, "l", TokenType.Identifier),
+                new Token(0, 1, ".", TokenType.Dot),
+                new Token(0, 1, "room", TokenType.Identifier),
+                new Token(0, 1, "==", TokenType.EqualEqual),
+                new Token(0, 1, "\"Room A\"", TokenType.String),
+                new Token(0, 1, "}", TokenType.RightBrace),
                 new Token(0, 1, "", TokenType.Eof))));
   }
 }

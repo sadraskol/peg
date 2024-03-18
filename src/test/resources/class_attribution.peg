@@ -6,11 +6,11 @@ record Lesson(subject: Subject, teacher: Teacher, studentGroup: StudentGroup) {
     injective relation slot: Slot
     injective relation room: Room
 }
-record StudentGroup(identity name: String)
-record Teacher(identity name: String)
-record Subject(identity name: String)
-record Room(identity name: String)
-record Slot(identity day: String, identity start: LocalTime, identity end: LocalTime)
+record StudentGroup(identity name: String) {}
+record Teacher(identity name: String) {}
+record Subject(identity name: String) {}
+record Room(identity name: String) {}
+record Slot(identity day: String, identity start: LocalTime, identity end: LocalTime) {}
 
 facts {
     Room = { "Room A", "Room B", "Room C" }

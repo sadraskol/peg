@@ -3,7 +3,9 @@ package com.sadraskol.peg.parser;
 import java.util.List;
 
 public sealed interface Expression {
-  record Forall(Tuple elements, Symbol set, Expression predicate) implements Expression {}
+  record Forall(Expression elements, Symbol set, Expression predicate) implements Expression {}
+
+  record Exists(Expression elements, Symbol set, Expression predicate) implements Expression {}
 
   record Tuple(List<Expression> tuples) implements Expression {}
 

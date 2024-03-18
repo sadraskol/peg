@@ -106,6 +106,17 @@ public class ParserTest {
                                     new Expression.Variable("l1"), new Expression.Variable("room")),
                                 new Expression.Member(
                                     new Expression.Variable("l2"),
-                                    new Expression.Variable("room")))))))));
+                                    new Expression.Variable("room")))))))),
+        new ParserTestCase(
+            "scanner/exists.peg",
+            List.of(
+                new Declaration.Constraint(
+                    new Expression.Exists(
+                        new Expression.Variable("l"),
+                        new Expression.Symbol("Lesson"),
+                        new Expression.Equal(
+                            new Expression.Member(
+                                new Expression.Variable("l"), new Expression.Variable("room")),
+                            new Expression.String("Room A")))))));
   }
 }

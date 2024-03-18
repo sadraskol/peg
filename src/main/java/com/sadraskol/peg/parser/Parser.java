@@ -16,7 +16,7 @@ public class Parser {
     this.declarations = new ArrayList<>();
   }
 
-  List<Declaration> parse() {
+  public List<Declaration> parse() {
     while (!(tokens.getFirst().type() == TokenType.Eof)) {
       if (tokens.getFirst().type() == TokenType.Import) {
         parseImportStatement();
@@ -300,6 +300,8 @@ public class Parser {
     } else if (tokens.peek().type() == TokenType.Symbol) {
       var symbol = getSymbolName(tokens.pop());
       return new Expression.Symbol(symbol);
+    } else if (tokens.peek().type() == TokenType.Exists) {
+      return existsExpr();
     } else if (tokens.peek().type() == TokenType.Forall) {
       return forallExpr();
     }
@@ -321,6 +323,28 @@ public class Parser {
     pop(TokenType.Colon);
     var predicate = constraintExpr();
     return new Expression.Forall(new Expression.Tuple(members), (Expression.Symbol) set, predicate);
+  }
+
+  private Expression existsExpr() {
+    pop(TokenType.Exists);
+    var members = new ArrayList<Expression>();
+    while (!(tokens.peek().type() == TokenType.In)) {
+      var member = constraintExpr();
+      if (tokens.peek().type() == TokenType.Comma) {
+        pop(TokenType.Comma);
+      }
+      members.add(member);
+    }
+    pop(TokenType.In);
+    var set = constraintExpr();
+    pop(TokenType.Colon);
+    var predicate = constraintExpr();
+    if (members.size() == 1) {
+      return new Expression.Exists(members.getFirst(), (Expression.Symbol) set, predicate);
+    } else {
+      return new Expression.Exists(
+          new Expression.Tuple(members), (Expression.Symbol) set, predicate);
+    }
   }
 
   private void pop(TokenType type) {
