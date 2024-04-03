@@ -93,7 +93,7 @@ public class Scanner {
   }
 
   private void scanComment() {
-    while (!endOfSource() && source.charAt(current) != '\r') {
+    while (!endOfSource() && source.charAt(current) != '\n') {
       current += 1;
     }
     this.matchedStr = "";

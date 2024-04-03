@@ -14,7 +14,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class ScannerTest {
   @ParameterizedTest
   @MethodSource("scannerTestCases")
-  void eof(String filename, List<Token> expectedTokens) {
+  void scannerTest(String filename, List<Token> expectedTokens) {
     var source = TestUtils.readFile(filename);
 
     var scanner = new Scanner(source);

@@ -9,16 +9,17 @@ public class Sat4jExample {
   public static void main(String[] args) throws ContradictionException, TimeoutException {
     var minisat = org.sat4j.minisat.SolverFactory.newDefault();
 
-    minisat.newVar(3);
+    minisat.newVar(4);
 
-    minisat.addClause(new VecInt(new int[] {1, 2, -3}));
-    minisat.addClause(new VecInt(new int[] {-2, 3}));
+    minisat.addClause(new VecInt(new int[] {1, 2}));
+    minisat.addClause(new VecInt(new int[] {3, 4}));
+    minisat.addClause(new VecInt(new int[] {1, 3}));
+    minisat.addClause(new VecInt(new int[] {2, 4}));
 
-    VecInt assumptions = new VecInt(new int[] {-1, -2, 3});
-    if (minisat.isSatisfiable(assumptions)) {
+    if (minisat.isSatisfiable()) {
       System.out.println("model: " + Arrays.toString(minisat.model()));
     } else {
-      System.out.println("Unsatisfiable assumptions: " + assumptions);
+      System.out.println("Unsatisfiable model");
     }
   }
 }

@@ -32,7 +32,5 @@ public sealed interface Expression {
   record Call(Expression callee, Expression method, List<Expression> arguments)
       implements Expression {}
 
-  record Array(List<Expression> tuples) implements Expression {}
-
-  record Assignment(Expression target, Expression expr) implements Expression {}
+  record Set(List<Expression> tuples) implements Expression {}
 }

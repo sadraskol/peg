@@ -1,0 +1,43 @@
+import peg.lang.String
+
+record Room(identity name: String) {
+  relation teacher: Teacher // set Room#teacher = ?
+}
+record Teacher(identity name: String) {}
+
+facts {
+  Room = { "Room A", "Room B" } // Room = {r1, r2} /\ r1 = "Room A" /\ r2 = "Room B"
+  Teacher = { "Gerber", "Damasio" } // Teacher = {t1, t2} /\ t1 = "Gerber" /\ t2 = "Damasio"
+}
+
+// Surjective constraint
+constraint {
+  forall t in Teacher:
+    exists r in Room: r.teacher = t // (r, t) \in Room#teacher
+}
+
+// /\ t1: \/ r1: (r1, t1) \in Room#teacher (P1)
+//        \/ r2: (r2, t1) \in Room#teacher (P2)
+// /\ t2: \/ r1: (r1, t2) \in Room#teacher (P3)
+//        \/ r2: (r2, t2) \in Room#teacher (P4)
+
+// Injective constraint
+constraint {
+  forall r in Room:
+    exists t in Teacher: r.teacher = t // (r, t) \in Room#teacher
+}
+
+// /\ r1: \/ t1: (r1, t1) \in Room#teacher (P1)
+//        \/ t2: (r1, t2) \in Room#teacher (P3)
+// /\ r2: \/ t1: (r2, t1) \in Room#teacher (P2)
+//        \/ t2: (r2, t2) \in Room#teacher (P4)
+
+// P1 \/ P2
+// P3 \/ P4
+// P1 \/ P3
+// P2 \/ P4
+
+// minisat: -P1 /\ P2 /\ P3 /\ -P4
+// (r1, t1) /\ (r2, t2) not in Room#teacher
+// (r2, t1) /\ (r1, t2) in Room#teacher
+// Room#teacher = {(r1, t2), (r2, t1)}

@@ -52,7 +52,7 @@ public class ParserTest {
         new ParserTestCase("scanner/eof.peg", List.of()),
         new ParserTestCase(
             "scanner/imports.peg",
-            List.of(new Declaration.Import(List.of("org", "peg", "String")))),
+            List.of(new Declaration.Import(new QualifiedName(List.of("org", "peg"), "String")))),
         new ParserTestCase(
             "scanner/records.peg",
             List.of(
@@ -67,9 +67,9 @@ public class ParserTest {
             List.of(
                 new Declaration.Facts(
                     List.of(
-                        new Expression.Assignment(
+                        new Expression.Equal(
                             new Expression.Symbol("Slot"),
-                            new Expression.Array(
+                            new Expression.Set(
                                 List.of(
                                     new Expression.Tuple(
                                         List.of(

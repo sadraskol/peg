@@ -1,0 +1,110 @@
+package com.sadraskol.peg.engine;
+
+import com.sadraskol.peg.parser.Declaration;
+import com.sadraskol.peg.parser.Expression;
+import com.sadraskol.peg.parser.QualifiedName;
+
+import java.util.*;
+
+public class Engine {
+    private final List<Declaration> declarations;
+
+    private final List<QualifiedName> imports;
+    private final Map<String, Set> sets;
+
+    public Engine(List<Declaration> declarations) {
+        this.declarations = declarations;
+        this.imports = new ArrayList<>();
+        this.sets = new HashMap<>();
+    }
+
+    public List<Proposition> propositions() {
+        var propositions = new ArrayList<Proposition>();
+        for (var declaration : declarations) {
+            switch (declaration) {
+                case Declaration.Import imp -> imports.add(imp.name());
+                case Declaration.Record record -> {
+                    sets.put(record.name(), new Set.Universe());
+                    for (var relation : record.relations()) {
+                        sets.put(record.name() + "#" + relation.name(), new Set.Universe());
+                    }
+                }
+                case Declaration.Facts facts -> {
+                    for (var expr : facts.expressions()) {
+                        propositions.add(evaluatePredicate(expr));
+                    }
+                }
+                case Declaration.Constraint constraint -> propositions.add(evaluatePredicate(constraint.expr()));
+                default -> {
+                }
+            }
+        }
+        return propositions;
+    }
+
+    public Proposition evaluatePredicate(Expression expression) {
+        switch (expression) {
+            case Expression.Equal equal -> {
+                switch (evaluateValue(equal.left())) {
+                    case Value.NamedSet left -> {
+                        var right = (Value.Set) evaluateValue(equal.right());
+                        return new Proposition.Primary(new BinaryOp.Equal(new Set.Named(left.name()), new Set.Literal(right.values())));
+                    }
+                    case Value.Curried left -> {
+                        var right = evaluateValue(equal.right());
+                        var relation = new Value.Tuple(List.of(left.value(), right));
+                        return new Proposition.Primary(new BinaryOp.In(relation, left.set()));
+                    }
+                    default ->
+                            throw new IllegalStateException("Expected left equal expression, but got: " + equal.left());
+                }
+            }
+            case Expression.Forall forall -> {
+                var vars = (Expression.Tuple) forall.elements();
+
+                var set = new Value.NamedSet(forall.set().name());
+                var proposition = evaluatePredicate(forall.predicate());
+                return new Proposition.Forall(vars.tuples().stream().map(va -> (Expression.Variable) va).map(va -> va.name()).map(va -> new Value.Variable(va)).toList(), set, proposition);
+            }
+            case Expression.Exists exists -> {
+                var vars = (Expression.Tuple) exists.elements();
+
+                var set = new Value.NamedSet(exists.set().name());
+                var proposition = evaluatePredicate(exists.predicate());
+                return new Proposition.Exists(vars.tuples().stream().map(va -> (Expression.Variable) va).map(va -> va.name()).map(va -> new Value.Variable(va)).toList(), set, proposition);
+            }
+            default -> throw new IllegalStateException("Expected a predicate, got: " + expression);
+        }
+    }
+
+    // TODO remove value expression here. Engine translates declarations and expression to Peg Internal Representation
+    private Value evaluateValue(Expression expr) {
+        switch (expr) {
+            case Expression.Set set -> {
+                var members = set.tuples().stream().map(this::evaluateValue).toList();
+
+                return new Value.Set(members);
+            }
+            case Expression.Member member -> {
+                var relation = (Value.Variable) evaluateValue(member.relation());
+                var set = sets.keySet().stream().filter(key -> key.endsWith(relation.name())).findFirst().orElseThrow(() -> new IllegalStateException("Expected to find a relation with name, but none find: " + relation.name()));
+                return new Value.Curried(new Value.NamedSet(set), evaluateValue(member.callee()));
+            }
+            case Expression.String string -> {
+                return new Value.Str(string.str());
+            }
+            case Expression.Symbol symbol -> {
+                return new Value.NamedSet(symbol.name());
+            }
+            case Expression.Tuple tuple -> {
+                var members = tuple.tuples().stream().map(this::evaluateValue).toList();
+
+                return new Value.Tuple(members);
+            }
+            case Expression.Variable variable -> {
+                return new Value.Variable(variable.name());
+            }
+            default -> throw new IllegalStateException("Expected value expression, got: " + expr);
+        }
+    }
+}
