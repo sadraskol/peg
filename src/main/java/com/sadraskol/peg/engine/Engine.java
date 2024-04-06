@@ -26,7 +26,7 @@ public class Engine {
                 case Declaration.Record record -> {
                     sets.put(record.name(), new Set.Universe());
                     for (var relation : record.relations()) {
-                        sets.put(record.name() + "#" + relation.name(), new Set.Universe());
+                        sets.put(record.name() + "#" + relation.name(), new Set.Product(new Set.Named(record.name()), new Set.Named(relation.name())));
                     }
                 }
                 case Declaration.Facts facts -> {

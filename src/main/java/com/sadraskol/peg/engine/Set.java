@@ -7,5 +7,7 @@ public sealed interface Set {
 
     record Universe() implements Set {}
 
+    record Product(Set leftSet, Set rightSet) implements Set {}
+
     record Named(String name) implements Set {}
 }

@@ -8,8 +8,8 @@ import com.sadraskol.peg.engine.Value;
 import java.util.*;
 
 public class Evaluator {
-    private Deque<Map<String, Value>> variables;
-    private List<Proposition> propositions;
+    private final Deque<Map<String, Value>> variables;
+    private final List<Proposition> propositions;
     public Evaluator() {
         this.propositions = new ArrayList<>();
         this.variables = new ArrayDeque<>();
