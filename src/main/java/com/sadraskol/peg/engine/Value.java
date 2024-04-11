@@ -4,23 +4,29 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public sealed interface Value {
-    record Tuple(List<Value> values) implements Value {
-        public String toString() {
-            return "(" + values.stream().map(Object::toString).collect(Collectors.joining(", "))+ ")";
-        }
+  record Tuple(List<Value> values) implements Value {
+    public String toString() {
+      return "(" + values.stream().map(Object::toString).collect(Collectors.joining(", ")) + ")";
     }
+  }
 
-    record Str(String value) implements Value {
-        public String toString() {
-            return "\"" + value + "\"";
-        }
+  record Str(String value) implements Value {
+    public String toString() {
+      return "\"" + value + "\"";
     }
+  }
 
-    record Set(com.sadraskol.peg.engine.Set set) implements Value {}
+  record Number(int i) implements Value {
+    public String toString() {
+      return Integer.toString(i);
+    }
+  }
 
-    record NamedSet(String name) implements Value {}
+  record Set(com.sadraskol.peg.engine.Set set) implements Value {}
 
-    record Curried(NamedSet set, Value value) implements Value {}
+  record NamedSet(String name) implements Value {}
 
-    record Variable(String name) implements Value {}
+  record Curried(NamedSet set, Value value) implements Value {}
+
+  record Variable(String name) implements Value {}
 }

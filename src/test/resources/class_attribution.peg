@@ -1,6 +1,4 @@
 import org.peg.String
-import org.peg.DateTime
-import org.peg.Duration
 
 record Lesson(subject: Subject, teacher: Teacher, studentGroup: StudentGroup) {
     injective relation slot: Slot
@@ -15,17 +13,17 @@ record Slot(identity day: String, identity start: LocalTime, identity end: Local
 facts {
     Room = { "Room A", "Room B", "Room C" }
     Slot = {
-        ("Monday", LocalTime.of(8, 30), LocalTime.of(9, 30)),
-        ("Monday", LocalTime.of(9, 30), LocalTime.of(10, 30)),
-        ("Monday", LocalTime.of(13, 30), LocalTime.of(14, 30)),
-        ("Monday", LocalTime.of(10, 30), LocalTime.of(11, 30)),
-        ("Monday", LocalTime.of(14, 30), LocalTime.of(15, 30)),
+        ("Monday", (8, 30), (9, 30)),
+        ("Monday", (9, 30), (10, 30)),
+        ("Monday", (13, 30), (14, 30)),
+        ("Monday", (10, 30), (11, 30)),
+        ("Monday", (14, 30), (15, 30)),
 
-        ("Tuesday", LocalTime.of(8, 30), LocalTime.of(9, 30)),
-        ("Tuesday", LocalTime.of(9, 30), LocalTime.of(10, 30)),
-        ("Tuesday", LocalTime.of(10, 30), LocalTime.of(11, 30)),
-        ("Tuesday", LocalTime.of(13, 30), LocalTime.of(14, 30)),
-        ("Tuesday", LocalTime.of(14, 30), LocalTime.of(15, 30)),
+        ("Tuesday", (8, 30), (9, 30)),
+        ("Tuesday", (9, 30), (10, 30)),
+        ("Tuesday", (10, 30), (11, 30)),
+        ("Tuesday", (13, 30), (14, 30)),
+        ("Tuesday", (14, 30), (15, 30)),
     }
     Lesson = {
         ("Math", "A. Turing", "9th grade"),
@@ -57,3 +55,11 @@ constraint {
         (l1 != l2 and l1.slot == l2.slot) implies
             (l1.room != l2.room and l1.teacher != l2.teacher and l1.studentGroup != l2.studentGroup)
 }
+// (not (l1 != l2 and l2.slot == l2.slot)) or (l1.room != l2.room and l1.teacher != l2.teacher and l1.studentGroup != l2.studentGroup)
+// not (l1 != l2) OR l1.slot == l2.slot) or (l1.room != l2.room and l1.teacher != l2.teacher and l1.studentGroup != l2.studentGroup)
+
+// for all l1 in lesson:
+// for all l2 in lesson:
+// /\ (not (l1 != l2) or l1.slot == l2.slot) or l1.room != l2.room)
+// /\ (not (l1 != l2) or l1.slot == l2.slot) or l1.teacher != l2.teacher)
+// /\ (not (l1 != l2) or l1.slot == l2.slot) or l1.studentGroup != l2.studentGroup)
