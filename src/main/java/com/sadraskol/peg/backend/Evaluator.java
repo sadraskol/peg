@@ -9,28 +9,31 @@ import java.util.*;
 
 public class Evaluator {
     private final Deque<Map<String, Value>> variables;
-    private final List<Proposition> propositions;
+
     public Evaluator() {
-        this.propositions = new ArrayList<>();
         this.variables = new ArrayDeque<>();
         this.variables.push(new HashMap<>());
     }
 
     public Proposition evaluate(Proposition proposition) {
-        switch(proposition) {
+        return evaluate(proposition, false);
+    }
+
+    public Proposition evaluate(Proposition proposition, boolean reify) {
+        switch (proposition) {
             case Proposition.Primary primary -> {
-                return evaluateBinaryOp(primary.truth());
+                return evaluateBinaryOp(primary.truth(), reify);
             }
             case Proposition.Forall forall -> {
                 var propositions = new ArrayList<Proposition>();
-                for (var arg: forall.args()) {
-                    Set set = resolveSet(forall.set()).orElseThrow(() -> new IllegalStateException("Cannot find variable named: " + forall.set().name())).set();
+                for (var arg : forall.args()) {
+                    Set set = resolveSet(forall.set().name()).set();
                     if (!(set instanceof Set.Literal)) {
                         throw new IllegalStateException("Expected literal set with values, got: " + set);
                     }
-                    for (var value: ((Set.Literal) set).values()) {
+                    for (var value : ((Set.Literal) set).values()) {
                         variables.push(Map.of(arg.name(), value));
-                        propositions.add(evaluate(forall.predicate()));
+                        propositions.add(evaluate(forall.predicate(), reify));
                         variables.pop();
                     }
                 }
@@ -38,14 +41,14 @@ public class Evaluator {
             }
             case Proposition.Exists exists -> {
                 var propositions = new ArrayList<Proposition>();
-                for (var arg: exists.args()) {
-                    Set set = resolveSet(exists.set()).orElseThrow(() -> new IllegalStateException("Cannot find variable named: " + exists.set().name())).set();
+                for (var arg : exists.args()) {
+                    Set set = resolveSet(exists.set().name()).set();
                     if (!(set instanceof Set.Literal)) {
                         throw new IllegalStateException("Expected literal set with values, got: " + set);
                     }
-                    for (var value: ((Set.Literal) set).values()) {
+                    for (var value : ((Set.Literal) set).values()) {
                         variables.push(Map.of(arg.name(), value));
-                        propositions.add(evaluate(exists.predicate()));
+                        propositions.add(evaluate(exists.predicate(), false));
                         variables.pop();
                     }
                 }
@@ -53,14 +56,14 @@ public class Evaluator {
             }
             case Proposition.Not not -> {
                 var primary = (Proposition.Primary) not.other();
-                return evaluateBinaryOp(primary.truth().negate());
+                return evaluateBinaryOp(primary.truth().negate(), reify);
             }
             default -> throw new IllegalStateException("Cannot evaluate proposition: " + proposition);
         }
     }
 
-    private Proposition evaluateBinaryOp(BinaryOp op) {
-        switch(op) {
+    private Proposition evaluateBinaryOp(BinaryOp op, boolean reify) {
+        switch (op) {
             case BinaryOp.Equal equal -> {
                 var left = (Set.Named) equal.left();
                 var right = equal.right();
@@ -71,48 +74,54 @@ public class Evaluator {
                 var value = resolveValue(in.value());
                 var setName = in.set();
 
-                var maybeValues = resolveSet(setName);
+                var set = resolveSet(setName.name());
 
-                if (maybeValues.isPresent()) {
-                    var set = maybeValues.get().set();
-                    switch (set) {
-                        case Set.Literal literal -> {
-                            if (literal.values().contains(value)) {
-                                return new Proposition.True();
-                            } else {
-                                return new Proposition.False();
-                            }
+                switch (set.set()) {
+                    case Set.Literal literal -> {
+                        if (literal.values().contains(value)) {
+                            return new Proposition.True();
+                        } else {
+                            return new Proposition.False();
                         }
-                        default -> {
+                    }
+                    case Set.Product product -> {
+                        if (reify) {
+                            product.including(value);
+                            return new Proposition.True();
+                        } else {
                             return new Proposition.Primary(new BinaryOp.In(value, setName));
                         }
                     }
-                } else {
-                    throw new IllegalStateException("Expected an existing set, got: " + setName);
+                    default -> {
+                        return new Proposition.Primary(new BinaryOp.In(value, setName));
+                    }
                 }
             }
             case BinaryOp.NotIn in -> {
                 var value = resolveValue(in.value());
                 var setName = in.set();
 
-                var maybeValues = resolveSet(setName);
+                var set = resolveSet(setName.name());
 
-                if (maybeValues.isPresent()) {
-                    var set = maybeValues.get().set();
-                    switch (set) {
-                        case Set.Literal literal -> {
-                            if (literal.values().contains(value)) {
-                                return new Proposition.False();
-                            } else {
-                                return new Proposition.True();
-                            }
-                        }
-                        default -> {
-                            return new Proposition.Primary(new BinaryOp.NotIn(value, setName));
+                switch (set.set()) {
+                    case Set.Literal literal -> {
+                        if (literal.values().contains(value)) {
+                            return new Proposition.False();
+                        } else {
+                            return new Proposition.True();
                         }
                     }
-                } else {
-                    throw new IllegalStateException("Expected an existing set, got: " + setName);
+                    case Set.Product product -> {
+                        if (reify) {
+                            product.excluding(value);
+                            return new Proposition.True();
+                        } else {
+                            return new Proposition.Primary(new BinaryOp.In(value, setName));
+                        }
+                    }
+                    default -> {
+                        return new Proposition.Primary(new BinaryOp.NotIn(value, setName));
+                    }
                 }
             }
             default -> throw new IllegalStateException("Unhandled binary op: " + op);
@@ -120,7 +129,7 @@ public class Evaluator {
     }
 
     private Value resolveValue(Value value) {
-        switch(value) {
+        switch (value) {
             case Value.Str ignored -> {
                 return value;
             }
@@ -128,7 +137,7 @@ public class Evaluator {
                 return new Value.Tuple(tuple.values().stream().map(this::resolveValue).toList());
             }
             case Value.Variable variable -> {
-                for (var stack: variables) {
+                for (var stack : variables) {
                     if (stack.get(variable.name()) != null) {
                         return stack.get(variable.name());
                     }
@@ -143,20 +152,51 @@ public class Evaluator {
         return variables.peek();
     }
 
-    public Deque<Map<String, Value>> getVariables() {
-        return variables;
-    }
-
-    public List<Proposition> getPropositions() {
-        return propositions;
-    }
-
-    public Optional<Value.Set> resolveSet(Value.NamedSet set) {
-        for (var stack: variables) {
-            if (stack.get(set.name()) != null) {
-                return Optional.of((Value.Set) stack.get(set.name()));
+    public Value.Set resolveSet(String set) {
+        for (var stack : variables) {
+            if (stack.get(set) != null) {
+                return (Value.Set) stack.get(set);
             }
         }
-        return Optional.empty();
+        throw new IllegalStateException("Cannot find set with name: " + set);
+    }
+
+    public Map<String, Set> reify() {
+        var result = new HashMap<String, Set>();
+        for (var stack : current().entrySet()) {
+            var val = stack.getValue();
+            switch (val) {
+                case Value.Set set -> {
+                    switch (set.set()) {
+                        case Set.Literal literal -> result.put(stack.getKey(), literal);
+                        case Set.Product product -> {
+                            var scalar = new HashSet<Value>();
+                            var left = resolveSet(product.leftSet().name()).set();
+                            var right = resolveSet(product.rightSet().name()).set();
+
+                            var leftElements = ((Set.Literal) left).values();
+                            var rightElements = ((Set.Literal) right).values();
+
+                            for (var l: leftElements) {
+                                for (var r: rightElements) {
+                                    scalar.add(new Value.Tuple(List.of(l, r)));
+                                }
+                            }
+
+                            scalar.removeAll(product.excludes());
+
+                            if (product.including().containsAll(scalar)) {
+                                result.put(stack.getKey(), new Set.Literal(scalar.stream().toList()));
+                            } else {
+                                throw new IllegalStateException("Could not resolve scalar set: " + product);
+                            }
+                        }
+                        default -> throw new IllegalStateException("Expected a reified set, but got: " + set.set());
+                    }
+                }
+                default -> throw new IllegalStateException("Expected a final value, but got: " + val);
+            }
+        }
+        return result;
     }
 }

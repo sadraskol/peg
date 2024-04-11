@@ -44,13 +44,13 @@ public class TreeExplorer {
         for (var term : satResult) {
             var proposition = terms.get(Math.abs(term) - 1);
             if (term < 0) {
-                evaluator.evaluate(new Proposition.Not(proposition));
+                evaluator.evaluate(new Proposition.Not(proposition), true);
             } else {
-                evaluator.evaluate(proposition);
+                evaluator.evaluate(proposition, true);
             }
         }
 
-        System.out.println(evaluator.getVariables());
+        System.out.println(evaluator.reify());
     }
 
     private static int[] executeSat(int terms, List<int[]> sat) throws TimeoutException, ContradictionException {

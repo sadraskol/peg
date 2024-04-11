@@ -27,8 +27,9 @@ public class Engine {
                     sets.add(record.name());
                     propositions.add(new Proposition.Primary(new BinaryOp.Equal(new Set.Named(record.name()), new Set.Universe())));
                     for (var relation : record.relations()) {
-                        sets.add(record.name() + "#" + relation.name());
-                        propositions.add(new Proposition.Primary(new BinaryOp.Equal(new Set.Named(record.name() + "#" + relation.name()), new Set.Product(new Set.Named(record.name()), new Set.Named(relation.name())))));
+                        String relationName = record.name() + "#" + relation.name();
+                        sets.add(relationName);
+                        propositions.add(new Proposition.Primary(new BinaryOp.Equal(new Set.Named(relationName), new Set.Product(new Set.Named(record.name()), new Set.Named(relation.type())))));
                     }
                 }
                 case Declaration.Facts facts -> {
