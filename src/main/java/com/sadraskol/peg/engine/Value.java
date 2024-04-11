@@ -16,7 +16,7 @@ public sealed interface Value {
         }
     }
 
-    record Set(List<Value> values) implements Value {}
+    record Set(com.sadraskol.peg.engine.Set set) implements Value {}
 
     record NamedSet(String name) implements Value {}
 

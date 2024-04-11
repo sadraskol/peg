@@ -24,8 +24,11 @@ public class Evaluator {
             case Proposition.Forall forall -> {
                 var propositions = new ArrayList<Proposition>();
                 for (var arg: forall.args()) {
-                    Value.Set set = resolveSet(forall.set()).orElseThrow(() -> new IllegalStateException("Cannot find variable named: " + forall.set().name()));
-                    for (var value: set.values()) {
+                    Set set = resolveSet(forall.set()).orElseThrow(() -> new IllegalStateException("Cannot find variable named: " + forall.set().name())).set();
+                    if (!(set instanceof Set.Literal)) {
+                        throw new IllegalStateException("Expected literal set with values, got: " + set);
+                    }
+                    for (var value: ((Set.Literal) set).values()) {
                         variables.push(Map.of(arg.name(), value));
                         propositions.add(evaluate(forall.predicate()));
                         variables.pop();
@@ -36,14 +39,21 @@ public class Evaluator {
             case Proposition.Exists exists -> {
                 var propositions = new ArrayList<Proposition>();
                 for (var arg: exists.args()) {
-                    Value.Set set = resolveSet(exists.set()).orElseThrow(() -> new IllegalStateException("Cannot find variable named: " + exists.set().name()));
-                    for (var value: set.values()) {
+                    Set set = resolveSet(exists.set()).orElseThrow(() -> new IllegalStateException("Cannot find variable named: " + exists.set().name())).set();
+                    if (!(set instanceof Set.Literal)) {
+                        throw new IllegalStateException("Expected literal set with values, got: " + set);
+                    }
+                    for (var value: ((Set.Literal) set).values()) {
                         variables.push(Map.of(arg.name(), value));
                         propositions.add(evaluate(exists.predicate()));
                         variables.pop();
                     }
                 }
                 return propositions.stream().reduce(new Proposition.False(), Proposition.Or::new);
+            }
+            case Proposition.Not not -> {
+                var primary = (Proposition.Primary) not.other();
+                return evaluateBinaryOp(primary.truth().negate());
             }
             default -> throw new IllegalStateException("Cannot evaluate proposition: " + proposition);
         }
@@ -53,25 +63,56 @@ public class Evaluator {
         switch(op) {
             case BinaryOp.Equal equal -> {
                 var left = (Set.Named) equal.left();
-                var right = (Set.Literal) equal.right();
-                current().put(left.name(), new Value.Set(right.values()));
+                var right = equal.right();
+                current().put(left.name(), new Value.Set(right));
                 return new Proposition.True();
             }
             case BinaryOp.In in -> {
                 var value = resolveValue(in.value());
-                var set = in.set();
+                var setName = in.set();
 
-                var maybeValues = resolveSet(set);
+                var maybeValues = resolveSet(setName);
 
                 if (maybeValues.isPresent()) {
-                    var values = maybeValues.get();
-                    if (values.values().contains(value)) {
-                        return new Proposition.True();
-                    } else {
-                        return new Proposition.False();
+                    var set = maybeValues.get().set();
+                    switch (set) {
+                        case Set.Literal literal -> {
+                            if (literal.values().contains(value)) {
+                                return new Proposition.True();
+                            } else {
+                                return new Proposition.False();
+                            }
+                        }
+                        default -> {
+                            return new Proposition.Primary(new BinaryOp.In(value, setName));
+                        }
                     }
                 } else {
-                    return new Proposition.Primary(new BinaryOp.In(value, set));
+                    throw new IllegalStateException("Expected an existing set, got: " + setName);
+                }
+            }
+            case BinaryOp.NotIn in -> {
+                var value = resolveValue(in.value());
+                var setName = in.set();
+
+                var maybeValues = resolveSet(setName);
+
+                if (maybeValues.isPresent()) {
+                    var set = maybeValues.get().set();
+                    switch (set) {
+                        case Set.Literal literal -> {
+                            if (literal.values().contains(value)) {
+                                return new Proposition.False();
+                            } else {
+                                return new Proposition.True();
+                            }
+                        }
+                        default -> {
+                            return new Proposition.Primary(new BinaryOp.NotIn(value, setName));
+                        }
+                    }
+                } else {
+                    throw new IllegalStateException("Expected an existing set, got: " + setName);
                 }
             }
             default -> throw new IllegalStateException("Unhandled binary op: " + op);

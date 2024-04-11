@@ -10,12 +10,12 @@ public class Engine {
     private final List<Declaration> declarations;
 
     private final List<QualifiedName> imports;
-    private final Map<String, Set> sets;
+    private final AbstractSet<String> sets;
 
     public Engine(List<Declaration> declarations) {
         this.declarations = declarations;
         this.imports = new ArrayList<>();
-        this.sets = new HashMap<>();
+        this.sets = new HashSet<>();
     }
 
     public List<Proposition> propositions() {
@@ -24,9 +24,11 @@ public class Engine {
             switch (declaration) {
                 case Declaration.Import imp -> imports.add(imp.name());
                 case Declaration.Record record -> {
-                    sets.put(record.name(), new Set.Universe());
+                    sets.add(record.name());
+                    propositions.add(new Proposition.Primary(new BinaryOp.Equal(new Set.Named(record.name()), new Set.Universe())));
                     for (var relation : record.relations()) {
-                        sets.put(record.name() + "#" + relation.name(), new Set.Product(new Set.Named(record.name()), new Set.Named(relation.name())));
+                        sets.add(record.name() + "#" + relation.name());
+                        propositions.add(new Proposition.Primary(new BinaryOp.Equal(new Set.Named(record.name() + "#" + relation.name()), new Set.Product(new Set.Named(record.name()), new Set.Named(relation.name())))));
                     }
                 }
                 case Declaration.Facts facts -> {
@@ -48,7 +50,10 @@ public class Engine {
                 switch (evaluateValue(equal.left())) {
                     case Value.NamedSet left -> {
                         var right = (Value.Set) evaluateValue(equal.right());
-                        return new Proposition.Primary(new BinaryOp.Equal(new Set.Named(left.name()), new Set.Literal(right.values())));
+                        if (!(right.set() instanceof Set.Literal)) {
+                            throw new IllegalStateException("Expected literal set with values, got: " + right.set());
+                        }
+                        return new Proposition.Primary(new BinaryOp.Equal(new Set.Named(left.name()), right.set()));
                     }
                     case Value.Curried left -> {
                         var right = evaluateValue(equal.right());
@@ -83,11 +88,11 @@ public class Engine {
             case Expression.Set set -> {
                 var members = set.tuples().stream().map(this::evaluateValue).toList();
 
-                return new Value.Set(members);
+                return new Value.Set(new Set.Literal(members));
             }
             case Expression.Member member -> {
                 var relation = (Value.Variable) evaluateValue(member.relation());
-                var set = sets.keySet().stream().filter(key -> key.endsWith(relation.name())).findFirst().orElseThrow(() -> new IllegalStateException("Expected to find a relation with name, but none find: " + relation.name()));
+                var set = sets.stream().filter(key -> key.endsWith(relation.name())).findFirst().orElseThrow(() -> new IllegalStateException("Expected to find a relation with name, but none find: " + relation.name()));
                 return new Value.Curried(new Value.NamedSet(set), evaluateValue(member.callee()));
             }
             case Expression.String string -> {

@@ -38,7 +38,19 @@ public class TreeExplorer {
 
         var sat = satTranslate(specs, terms);
 
-        System.out.println(Arrays.toString(executeSat(terms.size(), sat)));
+        int[] satResult = executeSat(terms.size(), sat);
+        System.out.println(Arrays.toString(satResult));
+
+        for (var term : satResult) {
+            var proposition = terms.get(Math.abs(term) - 1);
+            if (term < 0) {
+                evaluator.evaluate(new Proposition.Not(proposition));
+            } else {
+                evaluator.evaluate(proposition);
+            }
+        }
+
+        System.out.println(evaluator.getVariables());
     }
 
     private static int[] executeSat(int terms, List<int[]> sat) throws TimeoutException, ContradictionException {
