@@ -112,7 +112,7 @@ public class ParserTest {
             List.of(
                 new Declaration.Constraint(
                     new Expression.Exists(
-                        new Expression.Variable("l"),
+                        new Expression.Tuple(List.of(new Expression.Variable("l"))),
                         new Expression.Symbol("Lesson"),
                         new Expression.Equal(
                             new Expression.Member(
