@@ -2,18 +2,15 @@ package com.sadraskol.peg.engine;
 
 import com.sadraskol.peg.parser.Declaration;
 import com.sadraskol.peg.parser.Expression;
-import com.sadraskol.peg.parser.QualifiedName;
 import java.util.*;
 
 public class Engine {
   private final List<Declaration> declarations;
 
-  private final List<QualifiedName> imports;
   private final AbstractSet<String> sets;
 
   public Engine(List<Declaration> declarations) {
     this.declarations = declarations;
-    this.imports = new ArrayList<>();
     this.sets = new HashSet<>();
   }
 
@@ -21,7 +18,6 @@ public class Engine {
     var propositions = new ArrayList<Proposition>();
     for (var declaration : declarations) {
       switch (declaration) {
-        case Declaration.Import imp -> imports.add(imp.name());
         case Declaration.Record record -> {
           sets.add(record.name());
           propositions.add(
@@ -51,7 +47,7 @@ public class Engine {
     return propositions;
   }
 
-  public Proposition evaluatePredicate(Expression expression) {
+  private Proposition evaluatePredicate(Expression expression) {
     switch (expression) {
       case Expression.Equal equal -> {
         switch (evaluateValue(equal.left())) {
@@ -103,8 +99,8 @@ public class Engine {
         return new Proposition.Forall(
             vars.tuples().stream()
                 .map(va -> (Expression.Variable) va)
-                .map(va -> va.name())
-                .map(va -> new Value.Variable(va))
+                .map(Expression.Variable::name)
+                .map(Value.Variable::new)
                 .toList(),
             set,
             proposition);
@@ -117,8 +113,8 @@ public class Engine {
         return new Proposition.Exists(
             vars.tuples().stream()
                 .map(va -> (Expression.Variable) va)
-                .map(va -> va.name())
-                .map(va -> new Value.Variable(va))
+                .map(Expression.Variable::name)
+                .map(Value.Variable::new)
                 .toList(),
             set,
             proposition);
