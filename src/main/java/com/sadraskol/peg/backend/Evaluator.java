@@ -128,7 +128,7 @@ public class Evaluator {
 
     private Value resolveValue(Value value) {
         switch (value) {
-            case Value.Str ignored -> {
+            case Value.Str _ -> {
                 return value;
             }
             case Value.Tuple tuple -> {
@@ -152,7 +152,7 @@ public class Evaluator {
 
     public Set resolveSet(Value.Set set) {
         switch (set.set()) {
-            case Set.Literal literal -> {
+            case Set.Literal _ -> {
                 return set.set();
             }
             case Set.Named named -> {
@@ -166,7 +166,7 @@ public class Evaluator {
             case Set.Product product -> {
                 return product;
             }
-            case Set.Universe universe -> throw new IllegalStateException("Cannot resolve Universe set");
+            case Set.Universe _ -> throw new IllegalStateException("Cannot resolve Universe set");
         }
     }
 
