@@ -17,6 +17,7 @@ public class RunnerTest {
     assertEquals(
         new Set.Literal(List.of(new Value.Str("Gerber"), new Value.Str("Damasio"))),
         model.get("Teacher"));
+
     assertEquals(
         new Set.Literal(List.of(new Value.Str("Room A"), new Value.Str("Room B"))),
         model.get("Room"));

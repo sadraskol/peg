@@ -72,6 +72,9 @@ public sealed interface Proposition {
     }
   }
 
+  record Implies(Proposition left, Proposition right) implements Proposition {
+  }
+
   record And(Proposition left, Proposition right) implements Proposition {
     public Proposition conjunctiveNormalForm() {
       var cnfLeft = left.conjunctiveNormalForm();
@@ -101,7 +104,7 @@ public sealed interface Proposition {
     }
   }
 
-  record Forall(List<Value.Variable> args, Value.NamedSet set, Proposition predicate)
+  record Forall(List<Value.Variable> args, Value.Set set, Proposition predicate)
       implements Proposition {
     public Proposition conjunctiveNormalForm() {
       throw new IllegalStateException("Cannot simplify forall proposition");
@@ -111,13 +114,13 @@ public sealed interface Proposition {
       return "forall "
           + args.stream().map(Value.Variable::name).collect(Collectors.joining(", "))
           + " in "
-          + set.name()
+          + set.toString()
           + ": "
           + predicate.toString();
     }
   }
 
-  record Exists(List<Value.Variable> args, Value.NamedSet set, Proposition predicate)
+  record Exists(List<Value.Variable> args, Value.Set set, Proposition predicate)
       implements Proposition {
     public Proposition conjunctiveNormalForm() {
       throw new IllegalStateException("Cannot simplify forall proposition");
@@ -127,7 +130,7 @@ public sealed interface Proposition {
       return "exists "
           + args.stream().map(Value.Variable::name).collect(Collectors.joining(", "))
           + " in "
-          + set.name()
+          + set.toString()
           + ": "
           + predicate.toString();
     }
@@ -139,9 +142,13 @@ public sealed interface Proposition {
     }
   }
 
-  record Primary(BinaryOp truth) implements Proposition {
+  record Binary(Operator op, Value left, Value right) implements Proposition {
     public String toString() {
-      return truth.toString();
+      return left.toString() + " " + op.toString() + " " + right.toString();
+    }
+
+    public Binary negate() {
+      return new Binary(op.negate(), left, right);
     }
   }
 

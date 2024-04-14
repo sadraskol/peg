@@ -24,9 +24,7 @@ public sealed interface Value {
 
   record Set(com.sadraskol.peg.engine.Set set) implements Value {}
 
-  record NamedSet(String name) implements Value {}
-
-  record Curried(NamedSet set, Value value) implements Value {}
+  record Curried(Value.Set set, Value value) implements Value {}
 
   record Variable(String name) implements Value {}
 }
