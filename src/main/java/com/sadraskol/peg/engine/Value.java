@@ -27,4 +27,8 @@ public sealed interface Value {
   record Curried(Value.Set set, Value value) implements Value {}
 
   record Variable(String name) implements Value {}
+
+  record Member(Value value, Integer index) implements Value {
+    public String toString() { return value.toString() + "[" + index + "]"; }
+  }
 }

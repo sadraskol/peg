@@ -26,16 +26,30 @@ public class Evaluator {
             }
             case Proposition.Forall forall -> {
                 var propositions = new ArrayList<Proposition>();
-                for (var arg : forall.args()) {
-                    Set set = resolveSet(forall.set());
-                    if (!(set instanceof Set.Literal)) {
-                        throw new IllegalStateException("Expected literal set with values, got: " + set);
-                    }
+                Set set = resolveSet(forall.set());
+                if (!(set instanceof Set.Literal)) {
+                    throw new IllegalStateException("Expected literal set with values, got: " + set);
+                }
+                if (forall.args().size() == 1) {
                     for (var value : ((Set.Literal) set).values()) {
-                        variables.push(Map.of(arg.name(), value));
+                        variables.push(Map.of(forall.args().getFirst().name(), value));
                         propositions.add(evaluate(forall.predicate(), reify));
                         variables.pop();
                     }
+                } else if (forall.args().size() == 2) {
+                    var values = ((Set.Literal) set).values();
+                    var pairs = values.stream().flatMap(v1 -> values.stream()
+                                    .map(v2 -> new Value.Tuple(List.of(v1, v2))))
+                            .toList();
+
+                    for (var pair : pairs) {
+                        variables.push(Map.of(forall.args().get(0).name(), pair.values().get(0),
+                                forall.args().get(1).name(), pair.values().get(1)));
+                        propositions.add(evaluate(forall.predicate(), reify));
+                        variables.pop();
+                    }
+                } else {
+                    throw new IllegalStateException("Does not support more than 2 args in forall/exists loops");
                 }
                 return propositions.stream().reduce(new Proposition.True(), Proposition.And::new);
             }
@@ -55,8 +69,13 @@ public class Evaluator {
                 return propositions.stream().reduce(new Proposition.False(), Proposition.Or::new);
             }
             case Proposition.Not not -> {
-                var binary = (Proposition.Binary) not.other();
-                return evaluateBinaryOp(binary.negate(), reify);
+                return evaluate(not.other().negate(), reify);
+            }
+            case Proposition.Or or -> {
+                return new Proposition.Or(evaluate(or.left(), reify), evaluate(or.right(), reify));
+            }
+            case Proposition.And and -> {
+                return new Proposition.And(evaluate(and.left(), reify), evaluate(and.right(), reify));
             }
             default -> throw new IllegalStateException("Cannot evaluate proposition: " + proposition);
         }
@@ -65,10 +84,38 @@ public class Evaluator {
     private Proposition evaluateBinaryOp(Proposition.Binary binary, boolean reify) {
         switch (binary.op()) {
             case Operator.Equal -> {
-                var left = (Set.Named) ((Value.Set) binary.left()).set();
-                var right = binary.right();
-                current().put(left.name(), right);
-                return new Proposition.True();
+                switch (binary.left()) {
+                    case Value.Set set -> {
+                        var left = (Set.Named) set.set();
+                        var right = binary.right();
+                        current().put(left.name(), right);
+                        return new Proposition.True();
+                    }
+                    case Value.Variable _, Value.Member _ -> {
+                        var left = resolveValue(binary.left());
+                        var right = resolveValue(binary.right());
+                        if (left.equals(right)) {
+                            return new Proposition.True();
+                        } else {
+                            return new Proposition.False();
+                        }
+                    }
+                    default -> throw new IllegalStateException("Cannot evaluate equality for value: " + binary.left());
+                }
+            }
+            case Operator.Different -> {
+                switch (binary.left()) {
+                    case Value.Variable _, Value.Member _ -> {
+                        var left = resolveValue(binary.left());
+                        var right = resolveValue(binary.right());
+                        if (left.equals(right)) {
+                            return new Proposition.False();
+                        } else {
+                            return new Proposition.True();
+                        }
+                    }
+                    default -> throw new IllegalStateException("Cannot evaluate equality for value: " + binary.left());
+                }
             }
             case Operator.In -> {
                 var value = resolveValue(binary.left());
@@ -128,7 +175,7 @@ public class Evaluator {
 
     private Value resolveValue(Value value) {
         switch (value) {
-            case Value.Str _ -> {
+            case Value.Number _, Value.Str _ -> {
                 return value;
             }
             case Value.Tuple tuple -> {
@@ -141,6 +188,10 @@ public class Evaluator {
                     }
                 }
                 throw new IllegalStateException("Cannot resolve value named: " + variable);
+            }
+            case Value.Member member -> {
+                var tuple = (Value.Tuple) resolveValue(member.value());
+                return tuple.values().get(member.index());
             }
             default -> throw new IllegalStateException("Cannot resolve value: " + value);
         }

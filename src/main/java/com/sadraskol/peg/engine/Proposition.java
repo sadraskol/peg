@@ -25,6 +25,10 @@ public sealed interface Proposition {
     }
   }
 
+  default Proposition negate() {
+    throw new IllegalStateException("Negation of " + this + " not implemented yet");
+  }
+
   record Or(Proposition left, Proposition right) implements Proposition {
     public Proposition conjunctiveNormalForm() {
       var cnfLeft = left.conjunctiveNormalForm();
@@ -67,12 +71,13 @@ public sealed interface Proposition {
           .toList();
     }
 
-    public String toString() {
-      return left.toString() + " or " + right.toString();
+    public Proposition negate() {
+      return new Proposition.And(left.negate(), right.negate());
     }
-  }
 
-  record Implies(Proposition left, Proposition right) implements Proposition {
+    public String toString() {
+        return "(" + left.toString() + " or " + right.toString() + ")";
+    }
   }
 
   record And(Proposition left, Proposition right) implements Proposition {
@@ -95,12 +100,16 @@ public sealed interface Proposition {
       return Stream.concat(left.splitConjonctiveNormalForm(), right.splitConjonctiveNormalForm());
     }
 
+    public Proposition negate() {
+      return new Proposition.Or(left.negate(), right.negate());
+    }
+
     public List<Proposition> terms() {
       return Stream.concat(left.terms().stream(), right.terms().stream()).toList();
     }
 
     public String toString() {
-      return left.toString() + " and " + right.toString();
+      return "(" + left.toString() + " and " + right.toString() + ")";
     }
   }
 
@@ -126,6 +135,10 @@ public sealed interface Proposition {
       throw new IllegalStateException("Cannot simplify forall proposition");
     }
 
+    public Proposition negate() {
+      return new Forall(args, set, predicate.negate());
+    }
+
     public String toString() {
       return "exists "
           + args.stream().map(Value.Variable::name).collect(Collectors.joining(", "))
@@ -138,8 +151,12 @@ public sealed interface Proposition {
 
   record Not(Proposition other) implements Proposition {
     public String toString() {
-      return "not " + other.toString();
+      return "(not " + other.toString() + ")";
     }
+
+      public Proposition negate() {
+          return other.negate();
+      }
   }
 
   record Binary(Operator op, Value left, Value right) implements Proposition {

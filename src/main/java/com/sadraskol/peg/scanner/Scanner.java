@@ -48,6 +48,8 @@ public class Scanner {
         addToken(TokenType.Implies);
       } else if (matches("and")) {
         addToken(TokenType.And);
+      } else if (matches("or")) {
+        addToken(TokenType.Or);
       } else if (matches("identity")) {
         addToken(TokenType.Identity);
       } else if (matches("relation")) {

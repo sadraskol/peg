@@ -1,6 +1,7 @@
 import org.peg.String
+import org.peg.Number
 
-record Lesson(subject: String, teacher: String, studentGroup: String) {
+record Lesson(id: Number, subject: String, teacher: String, studentGroup: String) {
     injective relation slot: Slot
     injective relation room: Room
 }
@@ -17,20 +18,20 @@ facts {
         ("Tuesday", (9, 30), (10, 30)),
     }
     Lesson = {
-        ("Math", "A. Turing", "9th grade"),
-        ("Math", "A. Turing", "9th grade"),
-        ("Biology", "C. Darwin", "9th grade"),
-        ("Spanish", "P. Cruz", "9th grade"),
-        ("Math", "A. Turing", "10th grade"),
-        ("Math", "A. Turing", "10th grade"),
-        ("Geography", "C. Darwin", "10th grade"),
-        ("Spanish", "P. Cruz", "10th grade"),
+        (1, "Math", "A. Turing", "9th grade"),
+        (2, "Math", "A. Turing", "9th grade"),
+        (3, "Biology", "C. Darwin", "9th grade"),
+        (4, "Spanish", "P. Cruz", "9th grade"),
+        (5, "Math", "A. Turing", "10th grade"),
+        (6, "Math", "A. Turing", "10th grade"),
+        (7, "Geography", "C. Darwin", "10th grade"),
+        (8, "Spanish", "P. Cruz", "10th grade"),
     }
 }
 
 constraint {
     forall l1, l2 in Lesson:
-        (l1 != l2 and l1.slot = l2.slot) implies
+        (l1 != l2 and l1.slot == l2.slot) implies
             (l1.room != l2.room and l1.teacher != l2.teacher and l1.studentGroup != l2.studentGroup)
 }
 // (not (l1 != l2 and l2.slot == l2.slot)) or (l1.room != l2.room and l1.teacher != l2.teacher and l1.studentGroup != l2.studentGroup)
@@ -41,3 +42,20 @@ constraint {
 // /\ (not (l1 != l2) or l1.slot == l2.slot) or l1.room != l2.room)
 // /\ (not (l1 != l2) or l1.slot == l2.slot) or l1.teacher != l2.teacher)
 // /\ (not (l1 != l2) or l1.slot == l2.slot) or l1.studentGroup != l2.studentGroup)
+
+// forall l1, l2 in Lesson:
+//        (l1 != l2 and l1.slot == l2.slot) implies
+//            (l1.room != l2.room and l1.teacher != l2.teacher and l1.studentGroup != l2.studentGroup)
+
+// forall l1, l2 in Lesson:
+//       not (l1 != l2 and l1.slot == l2.slot) or
+//            (l1.room != l2.room and l1.teacher != l2.teacher and l1.studentGroup != l2.studentGroup)
+
+// forall l1, l2 in Lesson:
+//       l1 == l2 or l1.slot != l2.slot or
+//            (l1.room != l2.room and l1.teacher != l2.teacher and l1.studentGroup != l2.studentGroup)
+
+// forall l1, l2 in Lesson:
+//       l1 == l2 or l1.slot != l2.slot or l1.room != l2.room
+//   and l1 == l2 or l1.slot != l2.slot or l1.teacher != l2.teacher
+//   and l1 == l2 or l1.slot != l2.slot or l1.studentGroup != l2.studentGroup

@@ -8,11 +8,11 @@ import java.util.*;
 public class Engine {
     private final List<Declaration> declarations;
 
-    private final AbstractSet<String> sets;
+    private final java.util.Set<Type> types;
 
     public Engine(List<Declaration> declarations) {
         this.declarations = declarations;
-        this.sets = new HashSet<>();
+        this.types = new HashSet<>();
     }
 
     public List<Proposition> propositions() {
@@ -20,13 +20,16 @@ public class Engine {
         for (var declaration : declarations) {
             switch (declaration) {
                 case Declaration.Record record -> {
-                    sets.add(record.name());
+                    var type = new Type(record.name(), new ArrayList<>(), new ArrayList<>());
                     propositions.add(
                             new Proposition.Binary(
                                     Operator.Equal, new Value.Set(new Set.Named(record.name())), new Value.Set(new Set.Universe())));
+                    for (var field : record.members()) {
+                        type.fields().add(new TypedRef(field.type(), field.name()));
+                    }
                     for (var relation : record.relations()) {
+                        type.relations().add(new TypedRef(relation.type(), relation.name()));
                         String relationName = record.name() + "#" + relation.name();
-                        sets.add(relationName);
                         propositions.add(
                                 new Proposition.Binary(
                                         Operator.Equal,
@@ -34,6 +37,7 @@ public class Engine {
                                         new Value.Set(new Set.Product(
                                                 new Value.Set(new Set.Named(record.name())), new Value.Set(new Set.Named(relation.type()))))));
                     }
+                    types.add(type);
                 }
                 case Declaration.Facts facts -> {
                     for (var expr : facts.expressions()) {
@@ -51,8 +55,9 @@ public class Engine {
     private Proposition evaluatePredicate(Expression expression) {
         switch (expression) {
             case Expression.Equal equal -> {
-                switch (evaluateValue(equal.left())) {
-                    case Value.Set left -> {
+                Value left = evaluateValue(equal.left());
+                switch (left) {
+                    case Value.Set _ -> {
                         var right = (Value.Set) evaluateValue(equal.right());
                         if (!(right.set() instanceof Set.Literal)) {
                             throw new IllegalStateException(
@@ -60,18 +65,44 @@ public class Engine {
                         }
                         return new Proposition.Binary(Operator.Equal, left, right);
                     }
+                    case Value.Variable _, Value.Member _ -> {
+                        return new Proposition.Binary(Operator.Equal, left, evaluateValue(equal.right()));
+                    }
                     case Value.Curried curried -> {
                         var right = evaluateValue(equal.right());
-                        var relation = new Value.Tuple(List.of(curried.value(), right));
-                        return new Proposition.Binary(Operator.In, relation, curried.set());
+                        if (right instanceof Value.Curried) {
+                            var rightNamed = (Set.Named) ((Value.Curried) right).set().set();
+                            if (!curried.set().set().equals(rightNamed)) {
+                                throw new IllegalStateException("Expected both curried values to be the same set, got: " + rightNamed + " and: " + curried.set().set());
+                            }
+                            var set = rightNamed.name().split("#")[0];
+                            var relation = rightNamed.name().split("#")[1];
+                            var type = types.stream().filter(t -> t.name().equals(set)).findFirst().get();
+                            var setType = type.findTypeOf(relation).get();
+
+                            Value.Variable commonVariable = new Value.Variable("_named");
+                            var leftTuple = new Value.Tuple(List.of(curried.value(), commonVariable));
+                            var rightTuple = new Value.Tuple(List.of(curried.value(), commonVariable));
+
+                            var tupleSet = ((Value.Curried) right).set();
+
+                            return new Proposition.Exists(List.of(commonVariable), new Value.Set(new Set.Named(setType.type())), new Proposition.And(
+                                    new Proposition.Binary(Operator.In, leftTuple, tupleSet),
+                                    new Proposition.Binary(Operator.In, rightTuple, tupleSet)
+                            ));
+                        } else {
+                            var relation = new Value.Tuple(List.of(curried.value(), right));
+                            return new Proposition.Binary(Operator.In, relation, curried.set());
+                        }
                     }
                     default -> throw new IllegalStateException(
                             "Expected left equal expression, but got: " + equal.left());
                 }
             }
             case Expression.NotEqual notEqual -> {
-                switch (evaluateValue(notEqual.left())) {
-                    case Value.Set left -> {
+                Value left = evaluateValue(notEqual.left());
+                switch (left) {
+                    case Value.Set _ -> {
                         var right = (Value.Set) evaluateValue(notEqual.right());
                         if (!(right.set() instanceof Set.Literal)) {
                             throw new IllegalStateException(
@@ -80,10 +111,35 @@ public class Engine {
                         return new Proposition.Binary(
                                 Operator.Different, left, right);
                     }
-                    case Value.Curried left -> {
+                    case Value.Variable _, Value.Member _ -> {
+                        return new Proposition.Binary(Operator.Different, left, evaluateValue(notEqual.right()));
+                    }
+                    case Value.Curried curried -> {
                         var right = evaluateValue(notEqual.right());
-                        var relation = new Value.Tuple(List.of(left.value(), right));
-                        return new Proposition.Binary(Operator.NotIn, relation, left);
+                        if (right instanceof Value.Curried) {
+                            var rightNamed = (Set.Named) ((Value.Curried) right).set().set();
+                            if (!curried.set().set().equals(rightNamed)) {
+                                throw new IllegalStateException("Expected both curried values to be the same set, got: " + rightNamed + " and: " + curried.set().set());
+                            }
+                            var set = rightNamed.name().split("#")[0];
+                            var relation = rightNamed.name().split("#")[1];
+                            var type = types.stream().filter(t -> t.name().equals(set)).findFirst().get();
+                            var setType = type.findTypeOf(relation).get();
+
+                            Value.Variable commonVariable = new Value.Variable("_named");
+                            var leftTuple = new Value.Tuple(List.of(curried.value(), commonVariable));
+                            var rightTuple = new Value.Tuple(List.of(curried.value(), commonVariable));
+
+                            var tupleSet = ((Value.Curried) right).set();
+
+                            return new Proposition.Forall(List.of(commonVariable), new Value.Set(new Set.Named(setType.type())), new Proposition.Or(
+                                    new Proposition.And(new Proposition.Binary(Operator.In, leftTuple, tupleSet), new Proposition.Binary(Operator.NotIn, rightTuple, tupleSet)),
+                                    new Proposition.And(new Proposition.Binary(Operator.In, rightTuple, tupleSet), new Proposition.Binary(Operator.NotIn, leftTuple, tupleSet))
+                            ));
+                        } else {
+                            var relation = new Value.Tuple(List.of(curried.value(), right));
+                            return new Proposition.Binary(Operator.NotIn, relation, left);
+                        }
                     }
                     default -> throw new IllegalStateException(
                             "Expected left equal expression, but got: " + notEqual.left());
@@ -128,6 +184,9 @@ public class Engine {
             case Expression.And and -> {
                 return new Proposition.And(evaluatePredicate(and.left()), evaluatePredicate(and.right()));
             }
+            case Expression.Or or -> {
+                return new Proposition.Or(evaluatePredicate(or.left()), evaluatePredicate(or.right()));
+            }
             default -> throw new IllegalStateException("Expected a predicate, got: " + expression);
         }
     }
@@ -143,16 +202,24 @@ public class Engine {
             }
             case Expression.Member member -> {
                 var relation = (Value.Variable) evaluateValue(member.relation());
-                var set =
-                        sets.stream()
-                                .filter(key -> key.endsWith(relation.name()))
-                                .findFirst()
-                                .orElseThrow(
-                                        () ->
-                                                new IllegalStateException(
-                                                        "Expected to find a relation with name, but none find: "
-                                                                + relation.name()));
-                return new Value.Curried(new Value.Set(new Set.Named(set)), evaluateValue(member.callee()));
+                var maybeRelation =
+                        types.stream()
+                                .flatMap(type -> type.findRelation(relation.name()).stream())
+                                .findFirst();
+                var maybeField =
+                        types.stream()
+                                .flatMap(type -> type.findField(relation.name()).stream())
+                                .findFirst();
+                if (maybeRelation.isPresent()) {
+                    return new Value.Curried(new Value.Set(new Set.Named(maybeRelation.get())), evaluateValue(member.callee()));
+                } else if (maybeField.isPresent()) {
+                    return new Value.Member(evaluateValue(member.callee()), maybeField.get());
+                } else {
+                    throw new IllegalStateException(
+                            "Expected to find a relation or a field with name, but none find: "
+                                    + relation.name());
+                }
+
             }
             case Expression.String string -> {
                 return new Value.Str(string.str());

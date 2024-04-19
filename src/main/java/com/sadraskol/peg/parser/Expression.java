@@ -25,6 +25,8 @@ public sealed interface Expression {
 
   record And(Expression left, Expression right) implements Expression {}
 
+  record Or(Expression left, Expression right) implements Expression {}
+
   record Number(int i) implements Expression {}
 
   record String(java.lang.String str) implements Expression {}

@@ -1,7 +1,16 @@
 package com.sadraskol.peg.engine;
 
 public enum Operator {
-    In, NotIn, Equal, Different;
+    In("in"), NotIn("not in"), Equal("=="), Different("!=");
+
+    private final String str;
+    Operator(String str) {
+        this.str = str;
+    }
+
+    public String toString() {
+        return str;
+    }
 
     public Operator negate() {
         switch (this) {

@@ -101,16 +101,18 @@ public class EngineTest {
                                 new Proposition.Forall(
                                         List.of(new Value.Variable("l1"), new Value.Variable("l2")),
                                         new Value.Set(new Set.Named("Lesson")),
-                                        new Proposition.Implies(
-                                                new Proposition.And(
-                                                        new Proposition.Binary(Operator.Different, new Value.Variable("l1"), new Value.Variable("l2")),
-                                                        new Proposition.Binary(Operator.Equal, new Value.Curried(new Value.Set(new Set.Named("Lesson#slot")), new Value.Variable("l1")), new Value.Curried(new Value.Set(new Set.Named("Lesson#slot")), new Value.Variable("l2")))
+                                        new Proposition.Or(
+                                                new Proposition.Not(
+                                                        new Proposition.And(
+                                                                new Proposition.Binary(Operator.Different, new Value.Variable("l1"), new Value.Variable("l2")),
+                                                                new Proposition.Binary(Operator.Equal, new Value.Curried(new Value.Set(new Set.Named("Lesson#slot")), new Value.Variable("l1")), new Value.Curried(new Value.Set(new Set.Named("Lesson#slot")), new Value.Variable("l2")))
+                                                        )
                                                 ),
                                                 new Proposition.And(
                                                         new Proposition.Binary(Operator.Different, new Value.Curried(new Value.Set(new Set.Named("Lesson#room")), new Value.Variable("l1")), new Value.Curried(new Value.Set(new Set.Named("Lesson#room")), new Value.Variable("l2"))),
                                                         new Proposition.And(
-                                                                new Proposition.Binary(Operator.Different, new Value.Curried(new Value.Set(new Set.Named("Lesson#teacher")), new Value.Variable("l1")), new Value.Curried(new Value.Set(new Set.Named("Lesson#teacher")), new Value.Variable("l2"))),
-                                                                new Proposition.Binary(Operator.Different, new Value.Curried(new Value.Set(new Set.Named("Lesson#studentGroup")), new Value.Variable("l1")), new Value.Curried(new Value.Set(new Set.Named("Lesson#studentGroup")), new Value.Variable("l2"))))
+                                                                new Proposition.Binary(Operator.Different, new Value.Member(new Value.Variable("l1"), 1), new Value.Member(new Value.Variable("l2"), 1)),
+                                                                new Proposition.Binary(Operator.Different, new Value.Member(new Value.Variable("l1"), 2), new Value.Member(new Value.Variable("l2"), 2)))
                                                 )
                                         )
                                 )
@@ -156,6 +158,6 @@ public class EngineTest {
                                                         new Value.Tuple(
                                                                 List.of(new Value.Variable("r"), new Value.Variable("t"))),
                                                         new Value.Set(new Set.Named("Room#teacher"))))))
-        ));
+                ));
     }
 }

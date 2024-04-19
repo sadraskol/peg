@@ -1,0 +1,31 @@
+record Lesson(id: Number, teacher: String) {
+    injective relation slot: Slot
+    injective relation room: Room
+}
+record Room(name: String) {}
+record Slot(day: String) {}
+
+facts {
+    Room = { "Room A", "Room B" }
+    Slot = { "Monday", "Tuesday" }
+    Lesson = {
+        (1, "A. Turing"),
+        (2, "C. Darwin"),
+        (3, "P. Cruz")
+    }
+}
+
+constraint {
+  forall l in Lesson:
+    exists s in Slot: l.slot = s
+}
+
+constraint {
+  forall l in Lesson:
+    exists r in Room: l.room = r
+}
+
+constraint {
+    forall l1, l2 in Lesson:
+        l1 == l2 or (l1.slot == l2.slot implies (l1.room != l2.room and l1.teacher != l2.teacher))
+}
