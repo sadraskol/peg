@@ -1,0 +1,17 @@
+record Teacher(teacher: String) {
+    relation slot: Slot
+}
+record Slot(day: String) {}
+
+facts {
+    Slot = { "Monday", "Tuesday" }
+    Teacher = {
+        "A. Turing",
+        "P. Cruz"
+    }
+}
+
+constraint {
+    forall t1, t2 in Teacher:
+        t1 == t2 or t1.slot != t2.slot
+}

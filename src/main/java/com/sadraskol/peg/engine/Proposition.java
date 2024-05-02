@@ -50,7 +50,7 @@ public sealed interface Proposition {
                 new Proposition.Or(r, cnfRight).conjunctiveNormalForm())
             .conjunctiveNormalForm();
       }
-      if (right instanceof Proposition.And) {
+      if (cnfRight instanceof Proposition.And) {
         var l = ((And) cnfRight).left();
         var r = ((And) cnfRight).right();
         return new Proposition.And(
@@ -76,7 +76,7 @@ public sealed interface Proposition {
     }
 
     public String toString() {
-        return "(" + left.toString() + " or " + right.toString() + ")";
+      return "(" + left.toString() + " or " + right.toString() + ")";
     }
   }
 
@@ -154,9 +154,9 @@ public sealed interface Proposition {
       return "(not " + other.toString() + ")";
     }
 
-      public Proposition negate() {
-          return other.negate();
-      }
+    public Proposition negate() {
+      return other.negate();
+    }
   }
 
   record Binary(Operator op, Value left, Value right) implements Proposition {

@@ -6,9 +6,7 @@ import com.sadraskol.peg.engine.Proposition;
 import com.sadraskol.peg.engine.Set;
 import com.sadraskol.peg.parser.Parser;
 import com.sadraskol.peg.scanner.Scanner;
-
 import java.util.*;
-
 import org.sat4j.core.VecInt;
 import org.sat4j.specs.ContradictionException;
 import org.sat4j.specs.TimeoutException;
@@ -24,17 +22,13 @@ public record Runner(String source) {
     // evaluate and cnf
     var specs = new ArrayList<Proposition>();
     for (var proposition : engine.propositions()) {
-      System.out.println(proposition);
       var res = evaluator.evaluate(proposition);
-      System.out.println(res);
-      System.out.println(res.conjunctiveNormalForm());
       specs.addAll(res.conjunctiveNormalForm().splitConjonctiveNormalForm().toList());
     }
 
     // list terms
     var termSet = new LinkedHashSet<Proposition>();
     for (var phrase : specs) {
-      System.out.println(phrase);
       termSet.addAll(phrase.terms());
     }
     var terms = termSet.stream().toList();
@@ -49,7 +43,6 @@ public record Runner(String source) {
       if (term < 0) {
         proposition = new Proposition.Not(proposition);
       }
-      System.out.println(proposition);
       evaluator.evaluate(proposition, true);
     }
     return evaluator.reify();

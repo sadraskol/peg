@@ -9,7 +9,10 @@ public sealed interface Set {
   record Universe() implements Set {}
 
   record Product(
-      Value.Set leftSet, Value.Set rightSet, java.util.Set<Value> including, java.util.Set<Value> excludes)
+      Value.Set leftSet,
+      Value.Set rightSet,
+      java.util.Set<Value> including,
+      java.util.Set<Value> excludes)
       implements Set {
     public Product(Value.Set leftSet, Value.Set rightSet) {
       this(leftSet, rightSet, new HashSet<>(), new HashSet<>());
