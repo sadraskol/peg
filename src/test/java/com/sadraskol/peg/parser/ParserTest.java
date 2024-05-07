@@ -101,12 +101,18 @@ public class ParserTest {
                                         new Expression.Member(
                                             new Expression.Variable("l2"),
                                             new Expression.Variable("slot"))))),
-                            new Expression.NotEqual(
-                                new Expression.Member(
-                                    new Expression.Variable("l1"), new Expression.Variable("room")),
-                                new Expression.Member(
-                                    new Expression.Variable("l2"),
-                                    new Expression.Variable("room")))))))),
+                            new Expression.Grouping(
+                                new Expression.Or(
+                                    new Expression.NotEqual(
+                                        new Expression.Member(
+                                            new Expression.Variable("l1"),
+                                            new Expression.Variable("room")),
+                                        new Expression.Member(
+                                            new Expression.Variable("l2"),
+                                            new Expression.Variable("room"))),
+                                    new Expression.Equal(
+                                        new Expression.Variable("l1"),
+                                        new Expression.Variable("l2"))))))))),
         new ParserTestCase(
             "scanner/exists.peg",
             List.of(
