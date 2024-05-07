@@ -28,33 +28,7 @@ public class Scanner {
       if (endOfSource()) {
         break;
       }
-      if (matches("import")) {
-        addToken(TokenType.Import);
-      } else if (matches("facts")) {
-        addToken(TokenType.Facts);
-      } else if (matches("record")) {
-        addToken(TokenType.Record);
-      } else if (matches("exists")) {
-        addToken(TokenType.Exists);
-      } else if (matches("constraint")) {
-        addToken(TokenType.Constraint);
-      } else if (matches("forall")) {
-        addToken(TokenType.Forall);
-      } else if (matches("injective")) {
-        addToken(TokenType.Injective);
-      } else if (matches("in")) {
-        addToken(TokenType.In);
-      } else if (matches("implies")) {
-        addToken(TokenType.Implies);
-      } else if (matches("and")) {
-        addToken(TokenType.And);
-      } else if (matches("or")) {
-        addToken(TokenType.Or);
-      } else if (matches("identity")) {
-        addToken(TokenType.Identity);
-      } else if (matches("relation")) {
-        addToken(TokenType.Relation);
-      } else if (matches("==")) {
+      if (matches("==")) {
         addToken(TokenType.EqualEqual);
       } else if (matches("!=")) {
         addToken(TokenType.BangEqual);
@@ -145,7 +119,23 @@ public class Scanner {
       builder.append(source.charAt(current));
       current += 1;
     }
-    tokens.add(new Token(start, line, builder.toString(), TokenType.Identifier));
+    var content = builder.toString();
+    switch (content) {
+      case "import" -> addToken(TokenType.Import);
+      case "facts" -> addToken(TokenType.Facts);
+      case "record" -> addToken(TokenType.Record);
+      case "exists" -> addToken(TokenType.Exists);
+      case "constraint" -> addToken(TokenType.Constraint);
+      case "forall" -> addToken(TokenType.Forall);
+      case "injective" -> addToken(TokenType.Injective);
+      case "in" -> addToken(TokenType.In);
+      case "implies" -> addToken(TokenType.Implies);
+      case "and" -> addToken(TokenType.And);
+      case "or" -> addToken(TokenType.Or);
+      case "identity" -> addToken(TokenType.Identity);
+      case "relation" -> addToken(TokenType.Relation);
+      default -> tokens.add(new Token(start, line, content, TokenType.Identifier));
+    }
   }
 
   private void scanString() {
