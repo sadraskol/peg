@@ -5,7 +5,6 @@ import java.util.List;
 
 public class Scanner {
   private int current;
-  private String matchedStr;
 
   private int line;
   private int start;
@@ -16,7 +15,6 @@ public class Scanner {
   public Scanner(String source) {
     this.source = source;
     this.current = 0;
-    this.matchedStr = "";
     this.line = 1;
     this.start = 0;
     this.tokens = new ArrayList<>();
@@ -28,51 +26,70 @@ public class Scanner {
       if (endOfSource()) {
         break;
       }
-      if (matches("==")) {
-        addToken(TokenType.EqualEqual);
-      } else if (matches("!=")) {
-        addToken(TokenType.BangEqual);
-      } else if (matches("(")) {
-        addToken(TokenType.LeftParen);
-      } else if (matches(")")) {
-        addToken(TokenType.RightParen);
-      } else if (matches("{")) {
-        addToken(TokenType.LeftBrace);
-      } else if (matches("}")) {
-        addToken(TokenType.RightBrace);
-      } else if (matches("=")) {
-        addToken(TokenType.Equal);
-      } else if (matches(",")) {
-        addToken(TokenType.Comma);
-      } else if (matches(".")) {
-        addToken(TokenType.Dot);
-      } else if (matches(":")) {
-        addToken(TokenType.Colon);
-      } else if (matches("\"")) {
-        scanString();
-      } else if (matches("//")) {
-        scanComment();
-      } else if (Character.isUpperCase(source.charAt(current))) {
-        scanSymbol();
-      } else if (Character.isLowerCase(source.charAt(current))) {
-        scanIdentifier();
-      } else if (Character.isDigit(source.charAt(current))) {
-        scanNumber();
-      } else {
-        throw new RuntimeException("Unknown char (" + source.charAt(current) + ") at " + current);
+
+      start = current;
+
+      var c = advance();
+      switch (c) {
+        case '!' -> {
+          if (matches('=')) {
+            addToken(TokenType.BangEqual);
+          } else {
+            throw new RuntimeException("Unknown char (" + c + ") at " + current);
+          }
+        }
+        case '(' -> addToken(TokenType.LeftParen);
+        case ')' -> addToken(TokenType.RightParen);
+        case '{' -> addToken(TokenType.LeftBrace);
+        case '}' -> addToken(TokenType.RightBrace);
+        case '=' -> {
+          if (matches('=')) {
+            addToken(TokenType.EqualEqual);
+          } else {
+            addToken(TokenType.Equal);
+          }
+        }
+        case ',' -> addToken(TokenType.Comma);
+        case '.' -> addToken(TokenType.Dot);
+        case ':' -> addToken(TokenType.Colon);
+        case '\"' -> scanString();
+        case '/' -> {
+          if (matches('/')) {
+            scanComment();
+          } else {
+            throw new RuntimeException("Unknown char (" + c + ") at " + current);
+          }
+        }
+        default -> {
+          if (Character.isUpperCase(c)) {
+            scanSymbol();
+          } else if (Character.isLowerCase(c)) {
+            scanIdentifier();
+          } else if (Character.isDigit(c)) {
+            scanNumber();
+          } else {
+            throw new RuntimeException("Unknown char (" + c + ") at " + current);
+          }
+        }
       }
     }
 
+    start = current;
     addToken(TokenType.Eof);
 
     return tokens;
+  }
+
+  private char advance() {
+    char c = source.charAt(current);
+    current += 1;
+    return c;
   }
 
   private void scanComment() {
     while (!endOfSource() && source.charAt(current) != '\n') {
       current += 1;
     }
-    this.matchedStr = "";
   }
 
   private void skipWhiteSpaces() {
@@ -81,46 +98,38 @@ public class Scanner {
     }
   }
 
-  private boolean matches(String str) {
-    var doesMatch = source.substring(current).startsWith(str);
-    if (doesMatch) {
-      matchedStr = str;
+  private boolean matches(char c) {
+    if (source.charAt(current) == c) {
+      current += 1;
+      return true;
     }
-    return doesMatch;
+    return false;
   }
 
   void addToken(TokenType type) {
-    tokens.add(new Token(start, line, matchedStr, type));
-    current += matchedStr.length();
-    matchedStr = "";
+    tokens.add(new Token(start, line, source.substring(start, current), type));
   }
 
   private void scanNumber() {
-    var builder = new StringBuilder();
     while (Character.isDigit(source.charAt(current))) {
-      builder.append(source.charAt(current));
       current += 1;
     }
-    tokens.add(new Token(start, line, builder.toString(), TokenType.Number));
+    addToken(TokenType.Number);
   }
 
   private void scanSymbol() {
-    var builder = new StringBuilder();
     while (Character.isLetterOrDigit(source.charAt(current))) {
-      builder.append(source.charAt(current));
       current += 1;
     }
-    tokens.add(new Token(start, line, builder.toString(), TokenType.Symbol));
+    addToken(TokenType.Symbol);
   }
 
   private void scanIdentifier() {
-    var builder = new StringBuilder();
     while (Character.isLetterOrDigit(source.charAt(current))) {
-      builder.append(source.charAt(current));
       current += 1;
     }
-    var content = builder.toString();
-    switch (content) {
+    var matchedStr = source.substring(start, current);
+    switch (matchedStr) {
       case "import" -> addToken(TokenType.Import);
       case "facts" -> addToken(TokenType.Facts);
       case "record" -> addToken(TokenType.Record);
@@ -134,23 +143,16 @@ public class Scanner {
       case "or" -> addToken(TokenType.Or);
       case "identity" -> addToken(TokenType.Identity);
       case "relation" -> addToken(TokenType.Relation);
-      default -> tokens.add(new Token(start, line, content, TokenType.Identifier));
+      default -> addToken(TokenType.Identifier);
     }
   }
 
   private void scanString() {
-    var builder = new StringBuilder();
-    var quoteCount = 0;
-    while (quoteCount < 2) {
-      var c = source.charAt(current);
-      builder.append(c);
+    while (source.charAt(current) != '"') {
       current += 1;
-
-      if (c == '"') {
-        quoteCount += 1;
-      }
     }
-    tokens.add(new Token(start, line, builder.toString(), TokenType.String));
+    current += 1;
+    addToken(TokenType.String);
   }
 
   private boolean endOfSource() {
